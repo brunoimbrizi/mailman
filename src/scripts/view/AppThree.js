@@ -1,3 +1,5 @@
+import Grid from './grid/Grid';
+
 export default class AppThree {
 
 	constructor(view) {
@@ -7,6 +9,7 @@ export default class AppThree {
 		this.initThree();
 		this.initControls();
 		this.initObject();
+		this.initGrid();
 	}
 
 	initThree() {
@@ -38,6 +41,11 @@ export default class AppThree {
 		const material = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: true });
 		const mesh = new THREE.Mesh(geometry, material);
 		this.scene.add(mesh);
+	}
+
+	initGrid() {
+		this.grid = new Grid();
+		this.scene.add(this.grid.container);
 	}
 
 	// ---------------------------------------------------------------------------------------------

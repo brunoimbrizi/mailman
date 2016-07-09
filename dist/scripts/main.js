@@ -202,8 +202,8 @@ var AppAudio = function () {
 			}
 		}
 	}, {
-		key: 'stop',
-		value: function stop() {
+		key: 'pause',
+		value: function pause() {
 			this.sourceNode.stop(0);
 			this.pausedAt = Date.now() - this.startedAt;
 			this.paused = true;
@@ -331,13 +331,19 @@ ready(function () {
 });
 
 },{"./App":1}],4:[function(require,module,exports){
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _Grid = require('./grid/Grid');
+
+var _Grid2 = _interopRequireDefault(_Grid);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -351,10 +357,11 @@ var AppThree = function () {
 		this.initThree();
 		this.initControls();
 		this.initObject();
+		this.initGrid();
 	}
 
 	_createClass(AppThree, [{
-		key: "initThree",
+		key: 'initThree',
 		value: function initThree() {
 			// scene
 			this.scene = new THREE.Scene();
@@ -364,7 +371,7 @@ var AppThree = function () {
 			this.camera.position.z = 300;
 		}
 	}, {
-		key: "initControls",
+		key: 'initControls',
 		value: function initControls() {
 			this.controls = new THREE.TrackballControls(this.camera, this.renderer.domElement);
 			this.controls.target.set(0, 0, 0);
@@ -379,7 +386,7 @@ var AppThree = function () {
 			this.controls.enabled = true;
 		}
 	}, {
-		key: "initObject",
+		key: 'initObject',
 		value: function initObject() {
 			var geometry = new THREE.BoxGeometry(200, 200, 200);
 			// const geometry = new THREE.PlaneGeometry(400, 400, 20, 20);
@@ -387,18 +394,24 @@ var AppThree = function () {
 			var mesh = new THREE.Mesh(geometry, material);
 			this.scene.add(mesh);
 		}
+	}, {
+		key: 'initGrid',
+		value: function initGrid() {
+			this.grid = new _Grid2.default();
+			this.scene.add(this.grid.container);
+		}
 
 		// ---------------------------------------------------------------------------------------------
 		// PUBLIC
 		// ---------------------------------------------------------------------------------------------
 
 	}, {
-		key: "update",
+		key: 'update',
 		value: function update() {
 			this.controls.update();
 		}
 	}, {
-		key: "draw",
+		key: 'draw',
 		value: function draw() {
 			this.renderer.render(this.scene, this.camera);
 		}
@@ -408,7 +421,7 @@ var AppThree = function () {
 		// ---------------------------------------------------------------------------------------------
 
 	}, {
-		key: "resize",
+		key: 'resize',
 		value: function resize() {
 			if (!this.renderer) return;
 			this.camera.aspect = this.view.sketch.width / this.view.sketch.height;
@@ -426,7 +439,7 @@ var AppThree = function () {
 
 exports.default = AppThree;
 
-},{}],5:[function(require,module,exports){
+},{"./grid/Grid":9}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -508,6 +521,7 @@ var AppUI = function () {
 		this.audio = audio;
 
 		this.volume = 0.0;
+		this.smoothing = this.audio.analyserNode.smoothingTimeConstant;
 		this.range = [0, 1];
 
 		this.initControlKit();
@@ -531,15 +545,18 @@ var AppUI = function () {
    // } }	);
    */
 
-			this.controlKit.addPanel({ width: 300 }).addSubGroup({ label: 'Audio' }).addSlider(this, 'volume', 'range', { onChange: function onChange() {
-					that.onVolumeChange();
+			this.controlKit.addPanel({ width: 300 }).addSubGroup({ label: 'Audio' }).addSlider(this, 'smoothing', 'range', { onChange: function onChange() {
+					that.onAudioChange();
+				} }).addSlider(this, 'volume', 'range', { onChange: function onChange() {
+					that.onAudioChange();
 				} });
 		}
 	}, {
-		key: 'onVolumeChange',
-		value: function onVolumeChange(index) {
+		key: 'onAudioChange',
+		value: function onAudioChange(index) {
 			// console.log('onChange', index, this.view);
 			this.audio.gainNode.gain.value = this.volume;
+			this.audio.analyserNode.smoothingTimeConstant = this.smoothing;
 		}
 	}]);
 
@@ -628,6 +645,12 @@ var AppView = function () {
 			this.sketch.touchmove = function () {};
 
 			this.sketch.touchend = function () {};
+
+			this.sketch.keyup = function (e) {
+				if (e.keyCode === 32) {
+					if (_this.audio.paused) _this.audio.play();else _this.audio.pause();
+				}
+			};
 		}
 	}, {
 		key: 'initTwo',
@@ -680,12 +703,13 @@ var AudioBars = function () {
 		value: function draw(values) {
 			this.ctx.fillStyle = '#555';
 
+			var offset = 1;
 			var height = this.ctx.height * 0.2;
-			var w = (this.ctx.width - values.length) / values.length;
+			var w = (this.ctx.width - values.length * offset) / values.length;
 
 			for (var i = 0; i < values.length; i++) {
 				var h = values[i] * height + 4;
-				var x = i * (w + 1);
+				var x = i * (w + offset);
 				var y = this.ctx.height - h;
 				this.ctx.fillRect(x, y, w, h);
 			}
@@ -696,5 +720,59 @@ var AudioBars = function () {
 }();
 
 exports.default = AudioBars;
+
+},{}],9:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Grid = function () {
+	function Grid() {
+		_classCallCheck(this, Grid);
+
+		this.cols = 20;
+		this.rows = 10;
+		this.width = 800;
+		this.height = 400;
+
+		this.container = new THREE.Object3D();
+
+		this.initGrid();
+	}
+
+	_createClass(Grid, [{
+		key: "initGrid",
+		value: function initGrid() {
+			var w = this.width / this.cols;
+			var h = this.height / this.rows;
+
+			var geometry = new THREE.CylinderBufferGeometry(5, 5, 20, 16);
+			var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+
+			for (var i = 0; i < this.rows * this.cols; i++) {
+				var col = i % this.cols;
+				var row = floor(i / this.cols);
+
+				var x = w * col;
+				var y = h * row;
+
+				var mesh = new THREE.Mesh(geometry, material);
+				mesh.position.x = x;
+				mesh.position.y = y;
+				this.container.add(mesh);
+			}
+		}
+	}]);
+
+	return Grid;
+}();
+
+exports.default = Grid;
 
 },{}]},{},[3]);

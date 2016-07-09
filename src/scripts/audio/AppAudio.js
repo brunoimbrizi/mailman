@@ -68,7 +68,7 @@ export default class AppAudio {
 		}
 	}
 
-	stop() {
+	pause() {
 		this.sourceNode.stop(0);
 		this.pausedAt = Date.now() - this.startedAt;
 		this.paused = true;

@@ -54,6 +54,13 @@ export default class AppView {
 
 		this.sketch.touchend = () => {
 		};
+
+		this.sketch.keyup = (e) => {
+			if (e.keyCode === 32) {
+				if (this.audio.paused) this.audio.play();
+				else this.audio.pause();
+			}
+		};
 	}
 
 	initTwo() {

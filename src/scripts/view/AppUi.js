@@ -5,6 +5,7 @@ export default class AppUI {
 		this.audio = audio;
 
 		this.volume = 0.0;
+		this.smoothing = this.audio.analyserNode.smoothingTimeConstant;
 		this.range = [0, 1];
 
 		this.initControlKit();
@@ -29,11 +30,13 @@ export default class AppUI {
 		this.controlKit.addPanel({ width: 300 })
 
 		.addSubGroup({label: 'Audio'})
-		.addSlider(this, 'volume', 'range', { onChange: () => { that.onVolumeChange(); } })
+		.addSlider(this, 'smoothing', 'range', { onChange: () => { that.onAudioChange(); } })
+		.addSlider(this, 'volume', 'range', { onChange: () => { that.onAudioChange(); } })
 	}
 
-	onVolumeChange(index) {
+	onAudioChange(index) {
 		// console.log('onChange', index, this.view);
 		this.audio.gainNode.gain.value = this.volume;
+		this.audio.analyserNode.smoothingTimeConstant = this.smoothing;
 	}
 }
