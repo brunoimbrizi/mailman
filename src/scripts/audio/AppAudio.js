@@ -1,13 +1,14 @@
 export default class AppAudio {
 
 	get FFT_SIZE() { return 1024; }
-	get BINS() { return 256; }
+	get BINS() { return 128; }
 
 	get EVENT_AUDIO_ENDED() { return 'audioEnded'; }
 	get EVENT_AUDIO_RESTARTED() { return 'audioRestarted'; }
 
 	constructor() {
 		this.initContext();
+		this.initGain();
 		this.initAnalyser();
 
 		this.load('audio/04 - Soundgarden - Mailman.mp3');
@@ -18,12 +19,19 @@ export default class AppAudio {
 		this.ctx = new AudioContext();
 	}
 
+	initGain() {
+		this.gainNode = this.ctx.createGain();
+		this.gainNode.gain.value = 0.0;
+		this.gainNode.connect(this.ctx.destination);
+	}
+
 	initAnalyser() {
 		this.values = [];
 
 		this.analyserNode = this.ctx.createAnalyser();
 		this.analyserNode.smoothingTimeConstant = 0.9;
 		this.analyserNode.fftSize = this.FFT_SIZE;
+		this.analyserNode.connect(this.gainNode);
 		// this.analyserNode.connect(this.ctx.destination); // comment out to start mute
 	}
 

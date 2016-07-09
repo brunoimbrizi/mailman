@@ -117,7 +117,7 @@ var AppAudio = function () {
 	}, {
 		key: 'BINS',
 		get: function get() {
-			return 256;
+			return 128;
 		}
 	}, {
 		key: 'EVENT_AUDIO_ENDED',
@@ -135,6 +135,7 @@ var AppAudio = function () {
 		_classCallCheck(this, AppAudio);
 
 		this.initContext();
+		this.initGain();
 		this.initAnalyser();
 
 		this.load('audio/04 - Soundgarden - Mailman.mp3');
@@ -147,6 +148,13 @@ var AppAudio = function () {
 			this.ctx = new AudioContext();
 		}
 	}, {
+		key: 'initGain',
+		value: function initGain() {
+			this.gainNode = this.ctx.createGain();
+			this.gainNode.gain.value = 0.0;
+			this.gainNode.connect(this.ctx.destination);
+		}
+	}, {
 		key: 'initAnalyser',
 		value: function initAnalyser() {
 			this.values = [];
@@ -154,6 +162,7 @@ var AppAudio = function () {
 			this.analyserNode = this.ctx.createAnalyser();
 			this.analyserNode.smoothingTimeConstant = 0.9;
 			this.analyserNode.fftSize = this.FFT_SIZE;
+			this.analyserNode.connect(this.gainNode);
 			// this.analyserNode.connect(this.ctx.destination); // comment out to start mute
 		}
 
@@ -452,6 +461,7 @@ var AppTwo = function () {
 				type: Sketch.CANVAS,
 				container: document.querySelector('#container2D'),
 				autopause: false,
+				autoclear: false,
 				retina: window.devicePixelRatio >= 2,
 				fullscreen: true
 			});
@@ -459,12 +469,13 @@ var AppTwo = function () {
 	}, {
 		key: 'update',
 		value: function update() {
-			this.bars.update();
+			// this.bars.update(this.audio.values);
 		}
 	}, {
 		key: 'draw',
 		value: function draw() {
-			this.bars.draw();
+			this.sketch.clear();
+			this.bars.draw(this.audio.values);
 		}
 	}, {
 		key: 'initAudioBars',
@@ -490,12 +501,13 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var AppUI = function () {
-	function AppUI(view) {
+	function AppUI(view, audio) {
 		_classCallCheck(this, AppUI);
 
 		this.view = view;
+		this.audio = audio;
 
-		this.roughness = 1.0;
+		this.volume = 0.0;
 		this.range = [0, 1];
 
 		this.initControlKit();
@@ -519,15 +531,15 @@ var AppUI = function () {
    // } }	);
    */
 
-			this.controlKit.addPanel({ width: 300 }).addSubGroup({ label: 'Material' }).addSlider(this, 'roughness', 'range', { onChange: function onChange() {
-					that.onMaterialChange();
+			this.controlKit.addPanel({ width: 300 }).addSubGroup({ label: 'Audio' }).addSlider(this, 'volume', 'range', { onChange: function onChange() {
+					that.onVolumeChange();
 				} });
 		}
 	}, {
-		key: 'onMaterialChange',
-		value: function onMaterialChange(index) {
+		key: 'onVolumeChange',
+		value: function onVolumeChange(index) {
 			// console.log('onChange', index, this.view);
-			// this.view.three.updateMaterial();
+			this.audio.gainNode.gain.value = this.volume;
 		}
 	}]);
 
@@ -633,7 +645,7 @@ var AppView = function () {
 	}, {
 		key: 'initUI',
 		value: function initUI() {
-			this.ui = new _AppUI2.default(this);
+			this.ui = new _AppUI2.default(this, this.audio);
 		}
 	}]);
 
@@ -643,7 +655,7 @@ var AppView = function () {
 exports.default = AppView;
 
 },{"./AppThree":4,"./AppTwo":5,"./AppUI":6}],8:[function(require,module,exports){
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
 	value: true
@@ -661,11 +673,23 @@ var AudioBars = function () {
 	}
 
 	_createClass(AudioBars, [{
-		key: "update",
+		key: 'update',
 		value: function update() {}
 	}, {
-		key: "draw",
-		value: function draw() {}
+		key: 'draw',
+		value: function draw(values) {
+			this.ctx.fillStyle = '#555';
+
+			var height = this.ctx.height * 0.2;
+			var w = (this.ctx.width - values.length) / values.length;
+
+			for (var i = 0; i < values.length; i++) {
+				var h = values[i] * height + 4;
+				var x = i * (w + 1);
+				var y = this.ctx.height - h;
+				this.ctx.fillRect(x, y, w, h);
+			}
+		}
 	}]);
 
 	return AudioBars;

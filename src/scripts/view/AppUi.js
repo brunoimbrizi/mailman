@@ -1,9 +1,10 @@
 export default class AppUI {
 
-	constructor(view) {
+	constructor(view, audio) {
 		this.view = view;
+		this.audio = audio;
 
-		this.roughness = 1.0;
+		this.volume = 0.0;
 		this.range = [0, 1];
 
 		this.initControlKit();
@@ -27,12 +28,12 @@ export default class AppUI {
 
 		this.controlKit.addPanel({ width: 300 })
 
-		.addSubGroup({label: 'Material'})
-		.addSlider(this, 'roughness', 'range', { onChange: () => { that.onMaterialChange(); } })
+		.addSubGroup({label: 'Audio'})
+		.addSlider(this, 'volume', 'range', { onChange: () => { that.onVolumeChange(); } })
 	}
 
-	onMaterialChange(index) {
+	onVolumeChange(index) {
 		// console.log('onChange', index, this.view);
-		// this.view.three.updateMaterial();
+		this.audio.gainNode.gain.value = this.volume;
 	}
 }

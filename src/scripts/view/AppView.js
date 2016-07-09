@@ -68,6 +68,6 @@ export default class AppView {
 	}
 
 	initUI() {
-		this.ui = new AppUI(this);
+		this.ui = new AppUI(this, this.audio);
 	}
 }

@@ -15,17 +15,19 @@ export default class AppTwo {
 			type: Sketch.CANVAS,
 			container: document.querySelector('#container2D'),
 			autopause: false,
+			autoclear: false,
 			retina: (window.devicePixelRatio >= 2),
 			fullscreen: true
 		});
 	}
 
 	update() {
-		this.bars.update();
+		// this.bars.update(this.audio.values);
 	}
 
 	draw() {
-		this.bars.draw();
+		this.sketch.clear();
+		this.bars.draw(this.audio.values);
 	}
 
 	initAudioBars() {
