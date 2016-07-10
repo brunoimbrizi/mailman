@@ -2,8 +2,9 @@ import Grid from './grid/Grid';
 
 export default class AppThree {
 
-	constructor(view) {
+	constructor(view, audio) {
 		this.view = view;
+		this.audio = audio;
 		this.renderer = this.view.renderer;
 
 		this.initThree();
@@ -54,6 +55,7 @@ export default class AppThree {
 
 	update() {
 		this.controls.update();
+		this.grid.update(this.audio.values);
 	}
 
 	draw() {

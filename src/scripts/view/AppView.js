@@ -71,7 +71,7 @@ export default class AppView {
 		// transfer canvas to container3D
 		document.querySelector('#container3D').appendChild(this.renderer.domElement);
 
-		this.three = new AppThree(this);
+		this.three = new AppThree(this, this.audio);
 	}
 
 	initUI() {

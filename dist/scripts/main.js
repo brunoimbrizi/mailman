@@ -97,7 +97,7 @@ var App = function () {
 
 exports.default = App;
 
-},{"./audio/AppAudio":2,"./view/AppView":7}],2:[function(require,module,exports){
+},{"./audio/AppAudio":2,"./view/AppView":8}],2:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -331,6 +331,44 @@ ready(function () {
 });
 
 },{"./App":1}],4:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var MathUtils = function () {
+	function MathUtils() {
+		_classCallCheck(this, MathUtils);
+	}
+
+	_createClass(MathUtils, null, [{
+		key: "map",
+		value: function map(num, min1, max1, min2, max2) {
+			var round = arguments.length <= 5 || arguments[5] === undefined ? false : arguments[5];
+			var constrainMin = arguments.length <= 6 || arguments[6] === undefined ? true : arguments[6];
+			var constrainMax = arguments.length <= 7 || arguments[7] === undefined ? true : arguments[7];
+
+			if (constrainMin && num < min1) return min2;
+			if (constrainMax && num > max1) return max2;
+
+			var num1 = (num - min1) / (max1 - min1);
+			var num2 = num1 * (max2 - min2) + min2;
+			if (round) return Math.round(num2);
+			return num2;
+		}
+	}]);
+
+	return MathUtils;
+}();
+
+exports.default = MathUtils;
+
+},{}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -348,10 +386,11 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var AppThree = function () {
-	function AppThree(view) {
+	function AppThree(view, audio) {
 		_classCallCheck(this, AppThree);
 
 		this.view = view;
+		this.audio = audio;
 		this.renderer = this.view.renderer;
 
 		this.initThree();
@@ -409,6 +448,7 @@ var AppThree = function () {
 		key: 'update',
 		value: function update() {
 			this.controls.update();
+			this.grid.update(this.audio.values);
 		}
 	}, {
 		key: 'draw',
@@ -439,7 +479,7 @@ var AppThree = function () {
 
 exports.default = AppThree;
 
-},{"./grid/Grid":9}],5:[function(require,module,exports){
+},{"./grid/Grid":10}],6:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -502,7 +542,7 @@ var AppTwo = function () {
 
 exports.default = AppTwo;
 
-},{"./bars/AudioBars":8}],6:[function(require,module,exports){
+},{"./bars/AudioBars":9}],7:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -565,7 +605,7 @@ var AppUI = function () {
 
 exports.default = AppUI;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -663,7 +703,7 @@ var AppView = function () {
 			// transfer canvas to container3D
 			document.querySelector('#container3D').appendChild(this.renderer.domElement);
 
-			this.three = new _AppThree2.default(this);
+			this.three = new _AppThree2.default(this, this.audio);
 		}
 	}, {
 		key: 'initUI',
@@ -677,7 +717,7 @@ var AppView = function () {
 
 exports.default = AppView;
 
-},{"./AppThree":4,"./AppTwo":5,"./AppUI":6}],8:[function(require,module,exports){
+},{"./AppThree":5,"./AppTwo":6,"./AppUI":7}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -721,14 +761,20 @@ var AudioBars = function () {
 
 exports.default = AudioBars;
 
-},{}],9:[function(require,module,exports){
-"use strict";
+},{}],10:[function(require,module,exports){
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _MathUtils = require('../../utils/MathUtils');
+
+var _MathUtils2 = _interopRequireDefault(_MathUtils);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -747,10 +793,10 @@ var Grid = function () {
 	}
 
 	_createClass(Grid, [{
-		key: "initGrid",
+		key: 'initGrid',
 		value: function initGrid() {
-			var w = this.width / this.cols;
-			var h = this.height / this.rows;
+			var w = this.width / (this.cols - 1);
+			var h = this.height / (this.rows - 1);
 
 			var geometry = new THREE.CylinderBufferGeometry(5, 5, 20, 16);
 			var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
@@ -759,13 +805,28 @@ var Grid = function () {
 				var col = i % this.cols;
 				var row = floor(i / this.cols);
 
-				var x = w * col;
-				var y = h * row;
+				var x = w * col - this.width * 0.5;
+				var y = h * row - this.height * 0.5;
 
 				var mesh = new THREE.Mesh(geometry, material);
 				mesh.position.x = x;
 				mesh.position.y = y;
+				mesh.rotation.x = HALF_PI;
 				this.container.add(mesh);
+			}
+		}
+	}, {
+		key: 'update',
+		value: function update(values) {
+			var length = this.container.children.length;
+			var slice = values.slice(30, 30 + this.cols);
+
+			for (var i = 0; i < length; i++) {
+				var v = _MathUtils2.default.map(i, 0, length, 0, slice.length, true);
+				var item = this.container.children[i];
+				item.scale.x = slice[v] * 3;
+				item.scale.z = slice[v] * 5;
+				item.scale.y = slice[v] * 5;
 			}
 		}
 	}]);
@@ -775,4 +836,4 @@ var Grid = function () {
 
 exports.default = Grid;
 
-},{}]},{},[3]);
+},{"../../utils/MathUtils":4}]},{},[3]);
