@@ -112,7 +112,7 @@ var AppAudio = function () {
 	_createClass(AppAudio, [{
 		key: 'FFT_SIZE',
 		get: function get() {
-			return 1024;
+			return 512;
 		}
 	}, {
 		key: 'BINS',
@@ -158,6 +158,9 @@ var AppAudio = function () {
 		key: 'initAnalyser',
 		value: function initAnalyser() {
 			this.values = [];
+			this.selectedIndices = [42, 38, 28, 48, 32, 34, 40, 30, 24, 44, 26, 36];
+			// this.selectedIndices = [12, 18, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48];
+			this.selectedValues = [];
 
 			this.analyserNode = this.ctx.createAnalyser();
 			this.analyserNode.smoothingTimeConstant = 0.9;
@@ -240,9 +243,14 @@ var AppAudio = function () {
 				// Calculate the average frequency of the samples in the bin
 				var average = sum / bin;
 
-				// Divide by 256 to normalize
+				// Divide by number of bins to normalize
 				// this.values[i] = (average / this.BINS) / this.playbackRate;
 				this.values[i] = average / this.BINS;
+			}
+
+			for (var _i = 0; _i < this.selectedIndices.length; _i++) {
+				var index = this.selectedIndices[_i];
+				this.selectedValues[_i] = this.values[index];
 			}
 
 			// set current time
@@ -395,7 +403,8 @@ var AppThree = function () {
 
 		this.initThree();
 		this.initControls();
-		this.initObject();
+		this.initLights();
+		// this.initObject();
 		this.initGrid();
 	}
 
@@ -423,6 +432,17 @@ var AppThree = function () {
 			this.controls.dynamicDampingFactor = 0.15;
 			this.controls.maxDistance = 3000;
 			this.controls.enabled = true;
+		}
+	}, {
+		key: 'initLights',
+		value: function initLights() {
+			this.directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+			this.directionalLight.position.set(1, 1, 1);
+			this.scene.add(this.directionalLight);
+
+			this.pointLight = new THREE.PointLight(0xFFFFFF, 1);
+			this.pointLight.position.set(0, 50, 100);
+			// this.scene.add(this.pointLight);
 		}
 	}, {
 		key: 'initObject',
@@ -528,7 +548,7 @@ var AppTwo = function () {
 		key: 'draw',
 		value: function draw() {
 			this.sketch.clear();
-			this.bars.draw(this.audio.values);
+			this.bars.draw(this.audio.values, this.audio.selectedIndices);
 		}
 	}, {
 		key: 'initAudioBars',
@@ -740,9 +760,7 @@ var AudioBars = function () {
 		value: function update() {}
 	}, {
 		key: 'draw',
-		value: function draw(values) {
-			this.ctx.fillStyle = '#555';
-
+		value: function draw(values, selectedIndices) {
 			var offset = 1;
 			var height = this.ctx.height * 0.2;
 			var w = (this.ctx.width - values.length * offset) / values.length;
@@ -751,6 +769,14 @@ var AudioBars = function () {
 				var h = values[i] * height + 4;
 				var x = i * (w + offset);
 				var y = this.ctx.height - h;
+
+				var color = '#444';
+				for (var j = 0; j < selectedIndices.length; j++) {
+					if (i !== selectedIndices[j]) continue;
+					color = '#666';
+				}
+
+				this.ctx.fillStyle = color;
 				this.ctx.fillRect(x, y, w, h);
 			}
 		}
@@ -782,10 +808,10 @@ var Grid = function () {
 	function Grid() {
 		_classCallCheck(this, Grid);
 
-		this.cols = 20;
-		this.rows = 10;
-		this.width = 800;
-		this.height = 400;
+		this.cols = 16;
+		this.rows = 9;
+		this.width = 480;
+		this.height = 270;
 
 		this.container = new THREE.Object3D();
 
@@ -798,35 +824,45 @@ var Grid = function () {
 			var w = this.width / (this.cols - 1);
 			var h = this.height / (this.rows - 1);
 
-			var geometry = new THREE.CylinderBufferGeometry(5, 5, 20, 16);
-			var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+			// const geometry = new THREE.CylinderBufferGeometry(5, 5, 10, 6);
+			var geometry = new THREE.BoxBufferGeometry(2, 2, 2);
+			var material = new THREE.MeshPhongMaterial({ color: 0xffffff, shading: THREE.FlatShading });
 
 			for (var i = 0; i < this.rows * this.cols; i++) {
 				var col = i % this.cols;
 				var row = floor(i / this.cols);
 
 				var x = w * col - this.width * 0.5;
-				var y = h * row - this.height * 0.5;
+				var y = h * row * -1 + this.height * 0.5;
 
 				var mesh = new THREE.Mesh(geometry, material);
 				mesh.position.x = x;
 				mesh.position.y = y;
-				mesh.rotation.x = HALF_PI;
+				// mesh.rotation.x = HALF_PI;
+				// mesh.rotation.z = i * PI * 0.01;
 				this.container.add(mesh);
+
+				mesh.index = floor(random(24, 48));
 			}
 		}
 	}, {
 		key: 'update',
 		value: function update(values) {
+			// return;
 			var length = this.container.children.length;
-			var slice = values.slice(30, 30 + this.cols);
+			// const slice = values.slice(30, 30 + this.cols);
 
 			for (var i = 0; i < length; i++) {
-				var v = _MathUtils2.default.map(i, 0, length, 0, slice.length, true);
+				// const v = MathUtils.map(i, 0, length, 0, slice.length - 1, true);
+				// const v = MathUtils.map(i, 0, length, 0, values.length - 1, true);
 				var item = this.container.children[i];
-				item.scale.x = slice[v] * 3;
-				item.scale.z = slice[v] * 5;
-				item.scale.y = slice[v] * 5;
+				var v = item.index;
+				if (!values[v]) continue;
+				item.scale.x = values[v] * values[v] * 2;
+				item.scale.y = values[v] * 2;
+				item.scale.z = values[v] * 20;
+				item.position.z = item.scale.z * 2.5;
+				// item.rotation.y = values[v];
 			}
 		}
 	}]);

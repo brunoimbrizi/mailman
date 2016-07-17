@@ -27,7 +27,7 @@ export default class AppTwo {
 
 	draw() {
 		this.sketch.clear();
-		this.bars.draw(this.audio.values);
+		this.bars.draw(this.audio.values, this.audio.selectedIndices);
 	}
 
 	initAudioBars() {

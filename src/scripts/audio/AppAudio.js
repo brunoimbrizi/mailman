@@ -1,6 +1,6 @@
 export default class AppAudio {
 
-	get FFT_SIZE() { return 1024; }
+	get FFT_SIZE() { return 512; }
 	get BINS() { return 128; }
 
 	get EVENT_AUDIO_ENDED() { return 'audioEnded'; }
@@ -27,6 +27,9 @@ export default class AppAudio {
 
 	initAnalyser() {
 		this.values = [];
+		this.selectedIndices = [42, 38, 28, 48, 32, 34, 40, 30, 24, 44, 26, 36];
+		// this.selectedIndices = [12, 18, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48];
+		this.selectedValues = [];
 
 		this.analyserNode = this.ctx.createAnalyser();
 		this.analyserNode.smoothingTimeConstant = 0.9;
@@ -103,9 +106,14 @@ export default class AppAudio {
 			// Calculate the average frequency of the samples in the bin
 			const average = sum / bin;
 
-			// Divide by 256 to normalize
+			// Divide by number of bins to normalize
 			// this.values[i] = (average / this.BINS) / this.playbackRate;
 			this.values[i] = (average / this.BINS);
+		}
+
+		for (let i = 0; i < this.selectedIndices.length; i++) {
+			const index = this.selectedIndices[i]
+			this.selectedValues[i] = this.values[index];
 		}
 
 		// set current time

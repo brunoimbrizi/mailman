@@ -9,7 +9,8 @@ export default class AppThree {
 
 		this.initThree();
 		this.initControls();
-		this.initObject();
+		this.initLights();
+		// this.initObject();
 		this.initGrid();
 	}
 
@@ -34,6 +35,16 @@ export default class AppThree {
 		this.controls.dynamicDampingFactor = 0.15;
 		this.controls.maxDistance = 3000;
 		this.controls.enabled = true;
+	}
+
+	initLights() {
+		this.directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+		this.directionalLight.position.set(1, 1, 1);
+		this.scene.add(this.directionalLight);
+
+		this.pointLight = new THREE.PointLight(0xFFFFFF, 1);
+		this.pointLight.position.set(0, 50, 100);
+		// this.scene.add(this.pointLight);
 	}
 
 	initObject() {
