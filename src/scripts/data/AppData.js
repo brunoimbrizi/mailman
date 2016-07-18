@@ -8,9 +8,6 @@ export default class AppData {
 	load(url, callback) {
 		const request = new XMLHttpRequest();
 		request.open('GET', url, true);
-		// request.responseType = 'arraybuffer';
-		// request.onprogress = this.onRequestProgress.bind(this);
-		// request.onload = this.onRequestLoad.bind(this);
 		request.onload = (e) => {
 			callback(request);
 		}
@@ -36,6 +33,8 @@ export default class AppData {
 			if (!marker.Start) continue;
 			marker.mStart = StringUtils.timeToMillis(marker.Start);
 			marker.mDuration = StringUtils.timeToMillis(marker.Duration);
+			if (!marker.mDuration) marker.mDuration = 1000; // TEMP: min duration 1 second
+			marker.mEnd = marker.mStart + marker.mDuration;
 		}
 
 		// sort by start time

@@ -361,9 +361,6 @@ var AppData = function () {
 		value: function load(url, callback) {
 			var request = new XMLHttpRequest();
 			request.open('GET', url, true);
-			// request.responseType = 'arraybuffer';
-			// request.onprogress = this.onRequestProgress.bind(this);
-			// request.onload = this.onRequestLoad.bind(this);
 			request.onload = function (e) {
 				callback(request);
 			};
@@ -390,6 +387,8 @@ var AppData = function () {
 				if (!_marker.Start) continue;
 				_marker.mStart = _StringUtils2.default.timeToMillis(_marker.Start);
 				_marker.mDuration = _StringUtils2.default.timeToMillis(_marker.Duration);
+				if (!_marker.mDuration) _marker.mDuration = 1000; // TEMP: min duration 1 second
+				_marker.mEnd = _marker.mStart + _marker.mDuration;
 			}
 
 			// sort by start time
@@ -1091,8 +1090,6 @@ var SimpleLyrics = function () {
 		this.ctx = ctx;
 		this.audio = audio;
 		this.data = data;
-
-		this.curr = '';
 	}
 
 	_createClass(SimpleLyrics, [{
@@ -1104,21 +1101,25 @@ var SimpleLyrics = function () {
 	}, {
 		key: 'update',
 		value: function update() {
+			this.curr = '';
+
 			if (!this.markers && this.data.markers) this.markers = this.data.markers.concat();
 			if (!this.markers) return;
-			if (!this.markers.length) {
-				this.curr = '';
-				return;
-			}
+			if (!this.markers.length) return;
 
-			var marker = this.markers[0];
+			for (var i = 0; i < this.markers.length; i++) {
+				var marker = this.markers[i];
 
-			// audio reached marker
-			if (this.audio.currentTime > marker.mStart) {
-				// set current string
-				this.curr = marker.Name;
-				// remove first element
-				this.markers.shift();
+				// audio already passed this marker, not coming back...
+				if (this.audio.currentTime > marker.mEnd) {
+					this.markers.splice(i, 1);
+					i--;
+					continue;
+				}
+
+				if (this.audio.currentTime > marker.mStart && this.audio.currentTime < marker.mEnd) {
+					this.curr = marker.Name;
+				}
 			}
 		}
 	}, {

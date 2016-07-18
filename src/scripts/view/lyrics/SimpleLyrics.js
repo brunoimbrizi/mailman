@@ -4,8 +4,6 @@ export default class SimpleLyrics {
 		this.ctx = ctx;
 		this.audio = audio;
 		this.data = data;
-
-		this.curr = '';
 	}
 
 	initMarkers() {
@@ -14,21 +12,25 @@ export default class SimpleLyrics {
 	}
 
 	update() {
+		this.curr = '';
+
 		if (!this.markers && this.data.markers) this.markers = this.data.markers.concat();
 		if (!this.markers) return;
-		if (!this.markers.length) {
-			this.curr = '';
-			return;
-		}
+		if (!this.markers.length) return;
 
-		const marker = this.markers[0];
+		for (let i = 0; i < this.markers.length; i++) {
+			const marker = this.markers[i];
 
-		// audio reached marker
-		if (this.audio.currentTime > marker.mStart) {
-			// set current string
-			this.curr = marker.Name;
-			// remove first element
-			this.markers.shift();
+			// audio already passed this marker, not coming back...
+			if (this.audio.currentTime > marker.mEnd) {
+				this.markers.splice(i, 1);
+				i--;
+				continue;
+			}
+
+			if (this.audio.currentTime > marker.mStart && this.audio.currentTime < marker.mEnd) {
+				this.curr = marker.Name;
+			}
 		}
 	}
 
