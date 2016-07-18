@@ -6,6 +6,7 @@ export default class AppView {
 
 	constructor(app) {
 		this.audio = app.audio;
+		this.data = app.data;
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
 		this.initSketch();
@@ -64,7 +65,7 @@ export default class AppView {
 	}
 
 	initTwo() {
-		this.two = new AppTwo(this, this.audio);
+		this.two = new AppTwo(this, this.audio, this.data);
 	}
 
 	initThree() {

@@ -1,15 +1,18 @@
 import AudioBars from './bars/AudioBars';
 import AudioTrail from './trail/AudioTrail';
+import SimpleLyrics from './lyrics/SimpleLyrics';
 
 export default class AppTwo {
 
-	constructor(view, audio) {
+	constructor(view, audio, data) {
 		this.view = view;
 		this.audio = audio;
+		this.data = data;
 
 		this.initSketch();
 		this.initAudioBars();
 		this.initAudioTrail();
+		this.initSimpleLyrics();
 	}
 
 	initSketch() {
@@ -25,12 +28,14 @@ export default class AppTwo {
 
 	update() {
 		// this.bars.update(this.audio.values);
+		this.lyrics.update();
 	}
 
 	draw() {
 		this.sketch.clear();
 		this.bars.draw();
 		this.trail.draw();
+		this.lyrics.draw();
 	}
 
 	initAudioBars() {
@@ -39,5 +44,9 @@ export default class AppTwo {
 
 	initAudioTrail() {
 		this.trail = new AudioTrail(this.sketch, this.audio);
+	}
+
+	initSimpleLyrics() {
+		this.lyrics = new SimpleLyrics(this.sketch, this.audio, this.data);
 	}
 }

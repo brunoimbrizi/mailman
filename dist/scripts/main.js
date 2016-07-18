@@ -651,20 +651,26 @@ var _AudioTrail = require('./trail/AudioTrail');
 
 var _AudioTrail2 = _interopRequireDefault(_AudioTrail);
 
+var _SimpleLyrics = require('./lyrics/SimpleLyrics');
+
+var _SimpleLyrics2 = _interopRequireDefault(_SimpleLyrics);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var AppTwo = function () {
-	function AppTwo(view, audio) {
+	function AppTwo(view, audio, data) {
 		_classCallCheck(this, AppTwo);
 
 		this.view = view;
 		this.audio = audio;
+		this.data = data;
 
 		this.initSketch();
 		this.initAudioBars();
 		this.initAudioTrail();
+		this.initSimpleLyrics();
 	}
 
 	_createClass(AppTwo, [{
@@ -683,6 +689,7 @@ var AppTwo = function () {
 		key: 'update',
 		value: function update() {
 			// this.bars.update(this.audio.values);
+			this.lyrics.update();
 		}
 	}, {
 		key: 'draw',
@@ -690,6 +697,7 @@ var AppTwo = function () {
 			this.sketch.clear();
 			this.bars.draw();
 			this.trail.draw();
+			this.lyrics.draw();
 		}
 	}, {
 		key: 'initAudioBars',
@@ -701,6 +709,11 @@ var AppTwo = function () {
 		value: function initAudioTrail() {
 			this.trail = new _AudioTrail2.default(this.sketch, this.audio);
 		}
+	}, {
+		key: 'initSimpleLyrics',
+		value: function initSimpleLyrics() {
+			this.lyrics = new _SimpleLyrics2.default(this.sketch, this.audio, this.data);
+		}
 	}]);
 
 	return AppTwo;
@@ -708,7 +721,7 @@ var AppTwo = function () {
 
 exports.default = AppTwo;
 
-},{"./bars/AudioBars":11,"./trail/AudioTrail":13}],9:[function(require,module,exports){
+},{"./bars/AudioBars":11,"./lyrics/SimpleLyrics":13,"./trail/AudioTrail":14}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -829,6 +842,7 @@ var AppView = function () {
 		_classCallCheck(this, AppView);
 
 		this.audio = app.audio;
+		this.data = app.data;
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
 		this.initSketch();
@@ -889,7 +903,7 @@ var AppView = function () {
 	}, {
 		key: 'initTwo',
 		value: function initTwo() {
-			this.two = new _AppTwo2.default(this, this.audio);
+			this.two = new _AppTwo2.default(this, this.audio, this.data);
 		}
 	}, {
 		key: 'initThree',
@@ -1060,6 +1074,76 @@ var Grid = function () {
 exports.default = Grid;
 
 },{"../../utils/MathUtils":5}],13:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var SimpleLyrics = function () {
+	function SimpleLyrics(ctx, audio, data) {
+		_classCallCheck(this, SimpleLyrics);
+
+		this.ctx = ctx;
+		this.audio = audio;
+		this.data = data;
+
+		this.curr = '';
+	}
+
+	_createClass(SimpleLyrics, [{
+		key: 'initMarkers',
+		value: function initMarkers() {
+			// clone markers array
+
+		}
+	}, {
+		key: 'update',
+		value: function update() {
+			if (!this.markers && this.data.markers) this.markers = this.data.markers.concat();
+			if (!this.markers) return;
+			if (!this.markers.length) {
+				this.curr = '';
+				return;
+			}
+
+			var marker = this.markers[0];
+
+			// audio reached marker
+			if (this.audio.currentTime > marker.mStart) {
+				// set current string
+				this.curr = marker.Name;
+				// remove first element
+				this.markers.shift();
+			}
+		}
+	}, {
+		key: 'draw',
+		value: function draw() {
+			var fontSize = 60;
+
+			var w = this.ctx.measureText(this.curr.toUpperCase()).width;
+			// const x = (this.ctx.width - w) * 0.5;
+			// const y = (this.ctx.height + fontSize) * 0.5;
+			var x = 100;
+			var y = 100;
+
+			this.ctx.font = fontSize + 'px sans-serif';
+			this.ctx.fillStyle = '#fff';
+			this.ctx.fillText(this.curr.toUpperCase(), x, y);
+		}
+	}]);
+
+	return SimpleLyrics;
+}();
+
+exports.default = SimpleLyrics;
+
+},{}],14:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
