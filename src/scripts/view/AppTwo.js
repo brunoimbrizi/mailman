@@ -1,4 +1,5 @@
 import AudioBars from './bars/AudioBars';
+import AudioTrail from './trail/AudioTrail';
 
 export default class AppTwo {
 
@@ -8,6 +9,7 @@ export default class AppTwo {
 
 		this.initSketch();
 		this.initAudioBars();
+		this.initAudioTrail();
 	}
 
 	initSketch() {
@@ -27,10 +29,15 @@ export default class AppTwo {
 
 	draw() {
 		this.sketch.clear();
-		this.bars.draw(this.audio.values, this.audio.selectedIndices);
+		this.bars.draw();
+		this.trail.draw();
 	}
 
 	initAudioBars() {
-		this.bars = new AudioBars(this.sketch);
+		this.bars = new AudioBars(this.sketch, this.audio);
+	}
+
+	initAudioTrail() {
+		this.trail = new AudioTrail(this.sketch, this.audio);
 	}
 }

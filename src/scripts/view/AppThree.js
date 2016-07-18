@@ -7,6 +7,8 @@ export default class AppThree {
 		this.audio = audio;
 		this.renderer = this.view.renderer;
 
+		this.visible = false;
+
 		this.initThree();
 		this.initControls();
 		this.initLights();
@@ -65,11 +67,18 @@ export default class AppThree {
 	// ---------------------------------------------------------------------------------------------
 
 	update() {
+		if (!this.visible) return;
+
 		this.controls.update();
 		this.grid.update(this.audio.values);
 	}
 
 	draw() {
+		if (!this.visible) {
+			this.renderer.clear();
+			return;
+		}
+
 		this.renderer.render(this.scene, this.camera);
 	}
 

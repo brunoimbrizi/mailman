@@ -1,3 +1,4 @@
+import AppData from './data/AppData';
 import AppAudio from './audio/AppAudio';
 import AppView from './view/AppView';
 
@@ -7,8 +8,13 @@ export default class App {
 		this.el = el;
 		this.listeners = {};
 
+		this.initData();
 		this.initAudio();
 		this.initView();
+	}
+
+	initData() {
+		this.data = new AppData();
 	}
 
 	initAudio() {

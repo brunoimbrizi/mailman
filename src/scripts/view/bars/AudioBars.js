@@ -1,14 +1,23 @@
 export default class AudioBars {
 
-	constructor(ctx) {
+	constructor(ctx, audio) {
 		this.ctx = ctx;
+		this.audio = audio;
+
+		this.visible = true;
 	}
 
 	update() {
 
 	}
 
-	draw(values, selectedIndices) {
+	draw() {
+		if (!this.visible) return;
+
+		const values = this.audio.values;
+		const oldValues = this.audio.oldValues;
+		const selectedIndices = this.audio.selectedIndices;
+
 		const offset = 1;
 		const height = this.ctx.height * 0.2;
 		const w = (this.ctx.width - values.length * offset) / values.length;
@@ -23,6 +32,10 @@ export default class AudioBars {
 				if (i !== selectedIndices[j]) continue;
 				color = '#666';
 			}
+
+			if (values[i] > oldValues[i] + this.audio.kickThreshold) color = '#00ffff';
+
+			// if (values[i] > this.audio.threshold) color = '#00FF00';
 
 			this.ctx.fillStyle = color;
 			this.ctx.fillRect(x, y, w, h);

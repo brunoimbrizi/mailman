@@ -7,6 +7,10 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _AppData = require('./data/AppData');
+
+var _AppData2 = _interopRequireDefault(_AppData);
+
 var _AppAudio = require('./audio/AppAudio');
 
 var _AppAudio2 = _interopRequireDefault(_AppAudio);
@@ -26,11 +30,17 @@ var App = function () {
 		this.el = el;
 		this.listeners = {};
 
+		this.initData();
 		this.initAudio();
 		this.initView();
 	}
 
 	_createClass(App, [{
+		key: 'initData',
+		value: function initData() {
+			this.data = new _AppData2.default();
+		}
+	}, {
 		key: 'initAudio',
 		value: function initAudio() {
 			this.audio = new _AppAudio2.default();
@@ -97,7 +107,7 @@ var App = function () {
 
 exports.default = App;
 
-},{"./audio/AppAudio":2,"./view/AppView":8}],2:[function(require,module,exports){
+},{"./audio/AppAudio":2,"./data/AppData":3,"./view/AppView":10}],2:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -158,9 +168,13 @@ var AppAudio = function () {
 		key: 'initAnalyser',
 		value: function initAnalyser() {
 			this.values = [];
-			this.selectedIndices = [42, 38, 28, 48, 32, 34, 40, 30, 24, 44, 26, 36];
-			// this.selectedIndices = [12, 18, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48];
+			// this.selectedIndices = [42, 38, 28, 48, 32, 34, 40, 30, 24, 44, 26, 36];
+			this.selectedIndices = [20, 30, 40, 50, 60, 70, 75, 80, 85, 90];
 			this.selectedValues = [];
+			this.oldValues = [];
+
+			this.threshold = 1.0;
+			this.kickThreshold = 0.1;
 
 			this.analyserNode = this.ctx.createAnalyser();
 			this.analyserNode.smoothingTimeConstant = 0.9;
@@ -232,6 +246,8 @@ var AppAudio = function () {
 			var freqData = new Uint8Array(this.analyserNode.frequencyBinCount);
 			this.analyserNode.getByteFrequencyData(freqData);
 			var length = freqData.length;
+
+			this.oldValues = this.values.concat();
 
 			var bin = Math.ceil(length / this.BINS);
 			for (var i = 0; i < this.BINS; i++) {
@@ -319,6 +335,78 @@ exports.default = AppAudio;
 },{}],3:[function(require,module,exports){
 'use strict';
 
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _StringUtils = require('../utils/StringUtils');
+
+var _StringUtils2 = _interopRequireDefault(_StringUtils);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var AppData = function () {
+	function AppData() {
+		_classCallCheck(this, AppData);
+
+		this.load('data/Markers.csv', this.onLoadMarkers.bind(this));
+	}
+
+	_createClass(AppData, [{
+		key: 'load',
+		value: function load(url, callback) {
+			var request = new XMLHttpRequest();
+			request.open('GET', url, true);
+			// request.responseType = 'arraybuffer';
+			// request.onprogress = this.onRequestProgress.bind(this);
+			// request.onload = this.onRequestLoad.bind(this);
+			request.onload = function (e) {
+				callback(request);
+			};
+			request.send();
+		}
+	}, {
+		key: 'onLoadMarkers',
+		value: function onLoadMarkers(request) {
+			// parse csv
+			this.markers = Papa.parse(request.response, { header: true }).data;
+
+			// clean up / remove empty fields
+			for (var i = 0; i < this.markers.length; i++) {
+				var marker = this.markers[i];
+				if (!marker || !marker.Name || !marker.Start) {
+					this.markers.splice(i, 1);
+					i--;
+				}
+			}
+
+			// add time properties as numbers
+			for (var _i = 0; _i < this.markers.length; _i++) {
+				var _marker = this.markers[_i];
+				if (!_marker.Start) continue;
+				_marker.mStart = _StringUtils2.default.timeToMillis(_marker.Start);
+				_marker.mDuration = _StringUtils2.default.timeToMillis(_marker.Duration);
+			}
+
+			// sort by start time
+			this.markers.sort(function (a, b) {
+				return parseFloat(a.mStart) - parseFloat(b.mStart);
+			});
+		}
+	}]);
+
+	return AppData;
+}();
+
+exports.default = AppData;
+
+},{"../utils/StringUtils":6}],4:[function(require,module,exports){
+'use strict';
+
 var _App = require('./App');
 
 var _App2 = _interopRequireDefault(_App);
@@ -338,7 +426,7 @@ ready(function () {
 	window.app = app;
 });
 
-},{"./App":1}],4:[function(require,module,exports){
+},{"./App":1}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -376,7 +464,45 @@ var MathUtils = function () {
 
 exports.default = MathUtils;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var StringUtils = function () {
+	function StringUtils() {
+		_classCallCheck(this, StringUtils);
+	}
+
+	_createClass(StringUtils, null, [{
+		key: "timeToMillis",
+		value: function timeToMillis(str) {
+			// m:ss:ddd
+			var m = str.substr(0, 1) * 60 * 1000;
+			var s = str.substr(2, 2) * 1000;
+			var d = str.substr(5, 3) * 1.0;
+
+			return m + s + d;
+		}
+	}, {
+		key: "timeToSeconds",
+		value: function timeToSeconds(str) {
+			return StringUtils.timeToMillis(str) * 0.001;
+		}
+	}]);
+
+	return StringUtils;
+}();
+
+exports.default = StringUtils;
+
+},{}],7:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -400,6 +526,8 @@ var AppThree = function () {
 		this.view = view;
 		this.audio = audio;
 		this.renderer = this.view.renderer;
+
+		this.visible = false;
 
 		this.initThree();
 		this.initControls();
@@ -467,12 +595,19 @@ var AppThree = function () {
 	}, {
 		key: 'update',
 		value: function update() {
+			if (!this.visible) return;
+
 			this.controls.update();
 			this.grid.update(this.audio.values);
 		}
 	}, {
 		key: 'draw',
 		value: function draw() {
+			if (!this.visible) {
+				this.renderer.clear();
+				return;
+			}
+
 			this.renderer.render(this.scene, this.camera);
 		}
 
@@ -499,7 +634,7 @@ var AppThree = function () {
 
 exports.default = AppThree;
 
-},{"./grid/Grid":10}],6:[function(require,module,exports){
+},{"./grid/Grid":12}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -511,6 +646,10 @@ var _createClass = function () { function defineProperties(target, props) { for 
 var _AudioBars = require('./bars/AudioBars');
 
 var _AudioBars2 = _interopRequireDefault(_AudioBars);
+
+var _AudioTrail = require('./trail/AudioTrail');
+
+var _AudioTrail2 = _interopRequireDefault(_AudioTrail);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -525,6 +664,7 @@ var AppTwo = function () {
 
 		this.initSketch();
 		this.initAudioBars();
+		this.initAudioTrail();
 	}
 
 	_createClass(AppTwo, [{
@@ -548,12 +688,18 @@ var AppTwo = function () {
 		key: 'draw',
 		value: function draw() {
 			this.sketch.clear();
-			this.bars.draw(this.audio.values, this.audio.selectedIndices);
+			this.bars.draw();
+			this.trail.draw();
 		}
 	}, {
 		key: 'initAudioBars',
 		value: function initAudioBars() {
-			this.bars = new _AudioBars2.default(this.sketch);
+			this.bars = new _AudioBars2.default(this.sketch, this.audio);
+		}
+	}, {
+		key: 'initAudioTrail',
+		value: function initAudioTrail() {
+			this.trail = new _AudioTrail2.default(this.sketch, this.audio);
 		}
 	}]);
 
@@ -562,7 +708,7 @@ var AppTwo = function () {
 
 exports.default = AppTwo;
 
-},{"./bars/AudioBars":9}],7:[function(require,module,exports){
+},{"./bars/AudioBars":11,"./trail/AudioTrail":13}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -582,7 +728,15 @@ var AppUI = function () {
 
 		this.volume = 0.0;
 		this.smoothing = this.audio.analyserNode.smoothingTimeConstant;
+		this.kickThreshold = this.audio.kickThreshold;
+		this.threshold = this.audio.threshold;
+
 		this.range = [0, 1];
+		this.rangeThreshold = [0, 2];
+
+		this.barsVisible = this.view.two.bars.visible;
+
+		this.threeVisible = this.view.three.visible;
 
 		this.initControlKit();
 	}
@@ -605,10 +759,18 @@ var AppUI = function () {
    // } }	);
    */
 
-			this.controlKit.addPanel({ width: 300 }).addSubGroup({ label: 'Audio' }).addSlider(this, 'smoothing', 'range', { onChange: function onChange() {
+			this.controlKit.addPanel({ width: 300 }).addGroup({ label: 'Audio' }).addSlider(this, 'smoothing', 'range', { onChange: function onChange() {
+					that.onAudioChange();
+				} }).addSlider(this, 'threshold', 'rangeThreshold', { onChange: function onChange() {
+					that.onAudioChange();
+				} }).addSlider(this, 'kickThreshold', 'range', { onChange: function onChange() {
 					that.onAudioChange();
 				} }).addSlider(this, 'volume', 'range', { onChange: function onChange() {
 					that.onAudioChange();
+				} }).addGroup({ label: 'Bars' }).addCheckbox(this, 'barsVisible', { onChange: function onChange() {
+					that.onBarsChange();
+				} }).addGroup({ label: 'Three' }).addCheckbox(this, 'threeVisible', { onChange: function onChange() {
+					that.onThreeChange();
 				} });
 		}
 	}, {
@@ -617,6 +779,18 @@ var AppUI = function () {
 			// console.log('onChange', index, this.view);
 			this.audio.gainNode.gain.value = this.volume;
 			this.audio.analyserNode.smoothingTimeConstant = this.smoothing;
+			this.audio.threshold = this.threshold;
+			this.audio.kickThreshold = this.kickThreshold;
+		}
+	}, {
+		key: 'onBarsChange',
+		value: function onBarsChange() {
+			this.view.two.bars.visible = this.barsVisible;
+		}
+	}, {
+		key: 'onThreeChange',
+		value: function onThreeChange() {
+			this.view.three.visible = this.threeVisible;
 		}
 	}]);
 
@@ -625,7 +799,7 @@ var AppUI = function () {
 
 exports.default = AppUI;
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -737,7 +911,7 @@ var AppView = function () {
 
 exports.default = AppView;
 
-},{"./AppThree":5,"./AppTwo":6,"./AppUI":7}],9:[function(require,module,exports){
+},{"./AppThree":7,"./AppTwo":8,"./AppUI":9}],11:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -749,10 +923,13 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var AudioBars = function () {
-	function AudioBars(ctx) {
+	function AudioBars(ctx, audio) {
 		_classCallCheck(this, AudioBars);
 
 		this.ctx = ctx;
+		this.audio = audio;
+
+		this.visible = true;
 	}
 
 	_createClass(AudioBars, [{
@@ -760,7 +937,13 @@ var AudioBars = function () {
 		value: function update() {}
 	}, {
 		key: 'draw',
-		value: function draw(values, selectedIndices) {
+		value: function draw() {
+			if (!this.visible) return;
+
+			var values = this.audio.values;
+			var oldValues = this.audio.oldValues;
+			var selectedIndices = this.audio.selectedIndices;
+
 			var offset = 1;
 			var height = this.ctx.height * 0.2;
 			var w = (this.ctx.width - values.length * offset) / values.length;
@@ -776,6 +959,10 @@ var AudioBars = function () {
 					color = '#666';
 				}
 
+				if (values[i] > oldValues[i] + this.audio.kickThreshold) color = '#00ffff';
+
+				// if (values[i] > this.audio.threshold) color = '#00FF00';
+
 				this.ctx.fillStyle = color;
 				this.ctx.fillRect(x, y, w, h);
 			}
@@ -787,7 +974,7 @@ var AudioBars = function () {
 
 exports.default = AudioBars;
 
-},{}],10:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -872,4 +1059,77 @@ var Grid = function () {
 
 exports.default = Grid;
 
-},{"../../utils/MathUtils":4}]},{},[3]);
+},{"../../utils/MathUtils":5}],13:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var AudioTrail = function () {
+	function AudioTrail(ctx, audio) {
+		_classCallCheck(this, AudioTrail);
+
+		this.ctx = ctx;
+		this.audio = audio;
+
+		this.pos = new THREE.Vector2();
+		this.vel = new THREE.Vector2(-2, 0);
+		this.rects = [];
+	}
+
+	_createClass(AudioTrail, [{
+		key: 'draw',
+		value: function draw() {
+			// this.pos.x += this.vel.x;
+			this.pos.x = this.audio.currentTime * -0.5;
+
+			this.ctx.save();
+			this.ctx.translate(this.pos.x, this.pos.y);
+
+			// this.ctx.fillStyle = '#fff';
+			// this.ctx.fillRect(100, 100, 200, 300);
+
+			var values = this.audio.values;
+			var oldValues = this.audio.oldValues;
+
+			this.ctx.fillStyle = '#FFF';
+
+			for (var i = 0; i < values.length; i++) {
+				var selected = false;
+				for (var j = 0; j < this.audio.selectedIndices.length; j++) {
+					if (i === this.audio.selectedIndices[j]) selected = true;
+				}
+				if (!selected) continue;
+				// if (i !==) continue;
+
+				if (values[i] > oldValues[i] + this.audio.kickThreshold) {
+					var diff = values[i] - oldValues[i] - this.audio.kickThreshold;
+					var width = 50;
+					var height = max(diff * 50, 2);
+					var rect = { x: -this.pos.x + this.ctx.width * 0.5, y: i * 10, w: width, h: height };
+					// rect.tw = (values[i] - oldValues[i]) * 200;
+					// TweenMax.to(rect, 1.5, { w: width * 2 });
+					this.rects.push(rect);
+				}
+			}
+
+			for (var _i = 0; _i < this.rects.length; _i++) {
+				var _rect = this.rects[_i];
+				this.ctx.fillRect(_rect.x, _rect.y, _rect.w, _rect.h);
+			}
+
+			this.ctx.restore();
+		}
+	}]);
+
+	return AudioTrail;
+}();
+
+exports.default = AudioTrail;
+
+},{}]},{},[4]);

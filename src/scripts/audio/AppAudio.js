@@ -27,9 +27,13 @@ export default class AppAudio {
 
 	initAnalyser() {
 		this.values = [];
-		this.selectedIndices = [42, 38, 28, 48, 32, 34, 40, 30, 24, 44, 26, 36];
-		// this.selectedIndices = [12, 18, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48];
+		// this.selectedIndices = [42, 38, 28, 48, 32, 34, 40, 30, 24, 44, 26, 36];
+		this.selectedIndices = [20, 30, 40, 50, 60, 70, 75, 80, 85, 90];
 		this.selectedValues = [];
+		this.oldValues = [];
+
+		this.threshold = 1.0;
+		this.kickThreshold = 0.1;
 
 		this.analyserNode = this.ctx.createAnalyser();
 		this.analyserNode.smoothingTimeConstant = 0.9;
@@ -95,6 +99,8 @@ export default class AppAudio {
 		const freqData = new Uint8Array(this.analyserNode.frequencyBinCount);
 		this.analyserNode.getByteFrequencyData(freqData);
 		const length = freqData.length;
+
+		this.oldValues = this.values.concat();
 
 		const bin = Math.ceil(length / this.BINS);
 		for (let i = 0; i < this.BINS; i++) {

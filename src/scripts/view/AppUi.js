@@ -6,7 +6,15 @@ export default class AppUI {
 
 		this.volume = 0.0;
 		this.smoothing = this.audio.analyserNode.smoothingTimeConstant;
+		this.kickThreshold = this.audio.kickThreshold;
+		this.threshold = this.audio.threshold;
+		
 		this.range = [0, 1];
+		this.rangeThreshold = [0, 2];
+
+		this.barsVisible = this.view.two.bars.visible;
+
+		this.threeVisible = this.view.three.visible;
 
 		this.initControlKit();
 	}
@@ -29,14 +37,32 @@ export default class AppUI {
 
 		this.controlKit.addPanel({ width: 300 })
 
-		.addSubGroup({label: 'Audio'})
+		.addGroup({label: 'Audio'})
 		.addSlider(this, 'smoothing', 'range', { onChange: () => { that.onAudioChange(); } })
+		.addSlider(this, 'threshold', 'rangeThreshold', { onChange: () => { that.onAudioChange(); } })
+		.addSlider(this, 'kickThreshold', 'range', { onChange: () => { that.onAudioChange(); } })
 		.addSlider(this, 'volume', 'range', { onChange: () => { that.onAudioChange(); } })
+
+		.addGroup({label: 'Bars'})
+		.addCheckbox(this, 'barsVisible', { onChange: () => { that.onBarsChange(); } })
+
+		.addGroup({label: 'Three'})
+		.addCheckbox(this, 'threeVisible', { onChange: () => { that.onThreeChange(); } })
 	}
 
 	onAudioChange(index) {
 		// console.log('onChange', index, this.view);
 		this.audio.gainNode.gain.value = this.volume;
 		this.audio.analyserNode.smoothingTimeConstant = this.smoothing;
+		this.audio.threshold = this.threshold;
+		this.audio.kickThreshold = this.kickThreshold;
+	}
+
+	onBarsChange() {
+		this.view.two.bars.visible = this.barsVisible;
+	}
+
+	onThreeChange() {
+		this.view.three.visible = this.threeVisible;
 	}
 }
