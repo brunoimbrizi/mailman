@@ -3,10 +3,15 @@ export default class AppAudio {
 	get FFT_SIZE() { return 512; }
 	get BINS() { return 128; }
 
-	get EVENT_AUDIO_ENDED() { return 'audioEnded'; }
-	get EVENT_AUDIO_RESTARTED() { return 'audioRestarted'; }
+	static get AUDIO_PLAY() { return 'audio-play'; }
+	static get AUDIO_PAUSE() { return 'audio-pause'; }
+	static get AUDIO_END() { return 'audio-end'; }
+	static get AUDIO_RESTART() { return 'audio-restart'; }
 
-	constructor() {
+	constructor(app) {
+		this.app = app;
+		this.pausedAt = 0;
+
 		this.initContext();
 		this.initGain();
 		this.initAnalyser();
@@ -56,7 +61,7 @@ export default class AppAudio {
 	}
 
 	play() {
-		if (this.ended) window.dispatchEvent(new Event(this.EVENT_AUDIO_RESTARTED));
+		// if (this.ended) window.dispatchEvent(new Event(this.EVENT_AUDIO_RESTARTED));
 
 		this.sourceNode = this.ctx.createBufferSource();
 		this.sourceNode.onended = this.onSourceEnded;
@@ -66,19 +71,18 @@ export default class AppAudio {
 		this.ended = false;
 		this.paused = false;
 
-		if (this.pausedAt) {
-			this.startedAt = Date.now() - this.pausedAt;
-			this.sourceNode.start(0, this.pausedAt / 1000);
-		} else {
-			this.startedAt = Date.now();
-			this.sourceNode.start(0);
-		}
+		this.startedAt = Date.now() - this.pausedAt;
+		this.sourceNode.start(0, this.pausedAt / 1000);
+
+		this.app.trigger(AppAudio.AUDIO_PLAY, { currentTime: this.pausedAt });
 	}
 
 	pause() {
 		this.sourceNode.stop(0);
 		this.pausedAt = Date.now() - this.startedAt;
 		this.paused = true;
+
+		this.app.trigger(AppAudio.AUDIO_PAUSE, { currentTime: this.pausedAt });
 	}
 
 	seek(time) {
@@ -170,7 +174,7 @@ export default class AppAudio {
 		this.paused = true;
 		this.pausedAt = 0;
 
-		window.dispatchEvent(new Event(this.EVENT_AUDIO_ENDED));
+		// window.dispatchEvent(new Event(this.EVENT_AUDIO_ENDED));
 	}
 
 }

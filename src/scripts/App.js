@@ -18,7 +18,7 @@ export default class App {
 	}
 
 	initAudio() {
-		this.audio = new AppAudio();
+		this.audio = new AppAudio(this);
 	}
 
 	initView() {

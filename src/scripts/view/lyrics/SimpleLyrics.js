@@ -40,7 +40,7 @@ export default class SimpleLyrics {
 		const w = this.ctx.measureText(this.curr.toUpperCase()).width;
 		// const x = (this.ctx.width - w) * 0.5;
 		// const y = (this.ctx.height + fontSize) * 0.5;
-		const x = 100;
+		const x = 300;
 		const y = 100;
 
 		this.ctx.font = fontSize + 'px sans-serif';

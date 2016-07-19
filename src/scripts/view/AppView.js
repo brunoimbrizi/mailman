@@ -1,6 +1,8 @@
 import AppTwo from './AppTwo';
 import AppThree from './AppThree';
 import AppUI from './AppUI';
+import AppAudio from '../audio/AppAudio';
+import VideoPlayer from './video/VideoPlayer';
 
 export default class AppView {
 
@@ -8,6 +10,9 @@ export default class AppView {
 		this.audio = app.audio;
 		this.data = app.data;
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+		app.on(AppAudio.AUDIO_PLAY, this.onAudioPlay.bind(this));
+		app.on(AppAudio.AUDIO_PAUSE, this.onAudioPause.bind(this));
 
 		this.initSketch();
 	}
@@ -25,6 +30,7 @@ export default class AppView {
 		this.sketch.setup = () => {
 			this.initTwo();
 			this.initThree();
+			this.initVideo();
 			this.initUI();
 		};
 
@@ -44,6 +50,7 @@ export default class AppView {
 			this.hh = this.sketch.height * 0.5;
 
 			this.three.resize();
+			this.video.resize();
 		};
 
 		this.sketch.touchstart = (e) => {
@@ -75,7 +82,21 @@ export default class AppView {
 		this.three = new AppThree(this, this.audio);
 	}
 
+	initVideo() {
+		this.video = new VideoPlayer();
+	}
+
 	initUI() {
 		this.ui = new AppUI(this, this.audio);
+	}
+
+	onAudioPlay(e) {
+		// console.log('AppView.onAudioPlay', e);
+		this.video.play(e.currentTime);
+	}
+
+	onAudioPause(e) {
+		// console.log('AppView.onAudioPause', e);
+		this.video.pause();
 	}
 }

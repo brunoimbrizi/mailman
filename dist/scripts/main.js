@@ -43,7 +43,7 @@ var App = function () {
 	}, {
 		key: 'initAudio',
 		value: function initAudio() {
-			this.audio = new _AppAudio2.default();
+			this.audio = new _AppAudio2.default(this);
 		}
 	}, {
 		key: 'initView',
@@ -129,20 +129,33 @@ var AppAudio = function () {
 		get: function get() {
 			return 128;
 		}
-	}, {
-		key: 'EVENT_AUDIO_ENDED',
+	}], [{
+		key: 'AUDIO_PLAY',
 		get: function get() {
-			return 'audioEnded';
+			return 'audio-play';
 		}
 	}, {
-		key: 'EVENT_AUDIO_RESTARTED',
+		key: 'AUDIO_PAUSE',
 		get: function get() {
-			return 'audioRestarted';
+			return 'audio-pause';
+		}
+	}, {
+		key: 'AUDIO_END',
+		get: function get() {
+			return 'audio-end';
+		}
+	}, {
+		key: 'AUDIO_RESTART',
+		get: function get() {
+			return 'audio-restart';
 		}
 	}]);
 
-	function AppAudio() {
+	function AppAudio(app) {
 		_classCallCheck(this, AppAudio);
+
+		this.app = app;
+		this.pausedAt = 0;
 
 		this.initContext();
 		this.initGain();
@@ -200,7 +213,7 @@ var AppAudio = function () {
 	}, {
 		key: 'play',
 		value: function play() {
-			if (this.ended) window.dispatchEvent(new Event(this.EVENT_AUDIO_RESTARTED));
+			// if (this.ended) window.dispatchEvent(new Event(this.EVENT_AUDIO_RESTARTED));
 
 			this.sourceNode = this.ctx.createBufferSource();
 			this.sourceNode.onended = this.onSourceEnded;
@@ -210,13 +223,10 @@ var AppAudio = function () {
 			this.ended = false;
 			this.paused = false;
 
-			if (this.pausedAt) {
-				this.startedAt = Date.now() - this.pausedAt;
-				this.sourceNode.start(0, this.pausedAt / 1000);
-			} else {
-				this.startedAt = Date.now();
-				this.sourceNode.start(0);
-			}
+			this.startedAt = Date.now() - this.pausedAt;
+			this.sourceNode.start(0, this.pausedAt / 1000);
+
+			this.app.trigger(AppAudio.AUDIO_PLAY, { currentTime: this.pausedAt });
 		}
 	}, {
 		key: 'pause',
@@ -224,6 +234,8 @@ var AppAudio = function () {
 			this.sourceNode.stop(0);
 			this.pausedAt = Date.now() - this.startedAt;
 			this.paused = true;
+
+			this.app.trigger(AppAudio.AUDIO_PAUSE, { currentTime: this.pausedAt });
 		}
 	}, {
 		key: 'seek',
@@ -323,7 +335,7 @@ var AppAudio = function () {
 			this.paused = true;
 			this.pausedAt = 0;
 
-			window.dispatchEvent(new Event(this.EVENT_AUDIO_ENDED));
+			// window.dispatchEvent(new Event(this.EVENT_AUDIO_ENDED));
 		}
 	}]);
 
@@ -387,8 +399,17 @@ var AppData = function () {
 				if (!_marker.Start) continue;
 				_marker.mStart = _StringUtils2.default.timeToMillis(_marker.Start);
 				_marker.mDuration = _StringUtils2.default.timeToMillis(_marker.Duration);
-				if (!_marker.mDuration) _marker.mDuration = 1000; // TEMP: min duration 1 second
 				_marker.mEnd = _marker.mStart + _marker.mDuration;
+			}
+
+			// if no duration, set it until the start of next word
+			for (var _i2 = 0; _i2 < this.markers.length - 1; _i2++) {
+				var curr = this.markers[_i2];
+				var next = this.markers[_i2 + 1];
+				if (!curr.mDuration) {
+					curr.mDuration = next.mStart - curr.mStart;
+					curr.mEnd = curr.mStart + curr.mDuration;
+				}
 			}
 
 			// sort by start time
@@ -832,6 +853,14 @@ var _AppUI = require('./AppUI');
 
 var _AppUI2 = _interopRequireDefault(_AppUI);
 
+var _AppAudio = require('../audio/AppAudio');
+
+var _AppAudio2 = _interopRequireDefault(_AppAudio);
+
+var _VideoPlayer = require('./video/VideoPlayer');
+
+var _VideoPlayer2 = _interopRequireDefault(_VideoPlayer);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -843,6 +872,9 @@ var AppView = function () {
 		this.audio = app.audio;
 		this.data = app.data;
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+		app.on(_AppAudio2.default.AUDIO_PLAY, this.onAudioPlay.bind(this));
+		app.on(_AppAudio2.default.AUDIO_PAUSE, this.onAudioPause.bind(this));
 
 		this.initSketch();
 	}
@@ -864,6 +896,7 @@ var AppView = function () {
 			this.sketch.setup = function () {
 				_this.initTwo();
 				_this.initThree();
+				_this.initVideo();
 				_this.initUI();
 			};
 
@@ -883,6 +916,7 @@ var AppView = function () {
 				_this.hh = _this.sketch.height * 0.5;
 
 				_this.three.resize();
+				_this.video.resize();
 			};
 
 			this.sketch.touchstart = function (e) {
@@ -913,9 +947,26 @@ var AppView = function () {
 			this.three = new _AppThree2.default(this, this.audio);
 		}
 	}, {
+		key: 'initVideo',
+		value: function initVideo() {
+			this.video = new _VideoPlayer2.default();
+		}
+	}, {
 		key: 'initUI',
 		value: function initUI() {
 			this.ui = new _AppUI2.default(this, this.audio);
+		}
+	}, {
+		key: 'onAudioPlay',
+		value: function onAudioPlay(e) {
+			// console.log('AppView.onAudioPlay', e);
+			this.video.play(e.currentTime);
+		}
+	}, {
+		key: 'onAudioPause',
+		value: function onAudioPause(e) {
+			// console.log('AppView.onAudioPause', e);
+			this.video.pause();
 		}
 	}]);
 
@@ -924,7 +975,7 @@ var AppView = function () {
 
 exports.default = AppView;
 
-},{"./AppThree":7,"./AppTwo":8,"./AppUI":9}],11:[function(require,module,exports){
+},{"../audio/AppAudio":2,"./AppThree":7,"./AppTwo":8,"./AppUI":9,"./video/VideoPlayer":15}],11:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1130,7 +1181,7 @@ var SimpleLyrics = function () {
 			var w = this.ctx.measureText(this.curr.toUpperCase()).width;
 			// const x = (this.ctx.width - w) * 0.5;
 			// const y = (this.ctx.height + fontSize) * 0.5;
-			var x = 100;
+			var x = 300;
 			var y = 100;
 
 			this.ctx.font = fontSize + 'px sans-serif';
@@ -1216,5 +1267,88 @@ var AudioTrail = function () {
 }();
 
 exports.default = AudioTrail;
+
+},{}],15:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var VideoPlayer = function () {
+	function VideoPlayer() {
+		_classCallCheck(this, VideoPlayer);
+
+		this.video = document.querySelector('video');
+
+		// store original video size
+		// this.videoWidth = this.video.width;
+		// this.videoHeight = this.video.height;
+		this.videoWidth = 256;
+		this.videoHeight = 169;
+
+		// clear width and height attributes from video tag
+		this.video.removeAttribute('width');
+		this.video.removeAttribute('height');
+
+		this.resize();
+	}
+
+	_createClass(VideoPlayer, [{
+		key: 'play',
+		value: function play(time) {
+			// console.log('VideoPlayer.play', time);
+			this.video.currentTime = time * 0.001;
+			this.video.play();
+		}
+	}, {
+		key: 'pause',
+		value: function pause() {
+			// console.log('VideoPlayer.pause');
+			this.video.pause();
+		}
+	}, {
+		key: 'resize',
+		value: function resize() {
+			return;
+
+			// window size
+			var ww = window.innerWidth;
+			var wh = window.innerHeight;
+
+			// video size
+			var vw = this.videoWidth;
+			var vh = this.videoHeight;
+
+			// scale favouring width or height, whatever is smaller
+			var scale = ww / vw;
+			if (vh * scale < wh) scale = wh / vh;
+
+			// new size
+			var nw = Math.ceil(vw * scale);
+			var nh = Math.ceil(vh * scale);
+
+			// scale to screen
+			this.video.style.width = nw + 'px';
+			// this.$container.style.width = `${nw}px`;
+			// this.$container.style.height = `${nh}px`;
+
+			var marginh = Math.ceil((wh - nh) / 2);
+			var marginw = Math.ceil((ww - nw) / 2);
+
+			// center
+			this.video.style.marginLeft = marginw + 'px';
+			this.video.style.marginTop = marginh + 'px';
+		}
+	}]);
+
+	return VideoPlayer;
+}();
+
+exports.default = VideoPlayer;
 
 },{}]},{},[4]);
