@@ -33,8 +33,17 @@ export default class AppData {
 			if (!marker.Start) continue;
 			marker.mStart = StringUtils.timeToMillis(marker.Start);
 			marker.mDuration = StringUtils.timeToMillis(marker.Duration);
-			if (!marker.mDuration) marker.mDuration = 1000; // TEMP: min duration 1 second
 			marker.mEnd = marker.mStart + marker.mDuration;
+		}
+
+		// if no duration, set it until the start of next word
+		for (let i = 0; i < this.markers.length - 1; i++) {
+			const curr = this.markers[i];
+			const next = this.markers[i + 1];
+			if (!curr.mDuration) {
+				curr.mDuration = next.mStart - curr.mStart;
+				curr.mEnd = curr.mStart + curr.mDuration;
+			}
 		}
 
 		// sort by start time
