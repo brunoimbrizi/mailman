@@ -861,6 +861,10 @@ var _VideoPlayer = require('./video/VideoPlayer');
 
 var _VideoPlayer2 = _interopRequireDefault(_VideoPlayer);
 
+var _VideoCanvas = require('./video/VideoCanvas');
+
+var _VideoCanvas2 = _interopRequireDefault(_VideoCanvas);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -904,6 +908,7 @@ var AppView = function () {
 				_this.audio.update();
 				_this.two.update();
 				_this.three.update();
+				_this.video.update();
 			};
 
 			this.sketch.draw = function () {
@@ -949,7 +954,8 @@ var AppView = function () {
 	}, {
 		key: 'initVideo',
 		value: function initVideo() {
-			this.video = new _VideoPlayer2.default();
+			// this.video = new VideoPlayer();
+			this.video = new _VideoCanvas2.default();
 		}
 	}, {
 		key: 'initUI',
@@ -975,7 +981,7 @@ var AppView = function () {
 
 exports.default = AppView;
 
-},{"../audio/AppAudio":2,"./AppThree":7,"./AppTwo":8,"./AppUI":9,"./video/VideoPlayer":15}],11:[function(require,module,exports){
+},{"../audio/AppAudio":2,"./AppThree":7,"./AppTwo":8,"./AppUI":9,"./video/VideoCanvas":15,"./video/VideoPlayer":16}],11:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1277,17 +1283,99 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _VideoPlayer = require('./VideoPlayer');
+
+var _VideoPlayer2 = _interopRequireDefault(_VideoPlayer);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var VideoCanvas = function () {
+	function VideoCanvas() {
+		_classCallCheck(this, VideoCanvas);
+
+		this.initVideo();
+		this.initCanvas();
+	}
+
+	_createClass(VideoCanvas, [{
+		key: 'initVideo',
+		value: function initVideo() {
+			this.videoPlayer = new _VideoPlayer2.default();
+		}
+	}, {
+		key: 'initCanvas',
+		value: function initCanvas() {
+			this.canvas = document.createElement('canvas');
+			this.canvas.width = this.videoPlayer.videoWidth;
+			this.canvas.height = this.videoPlayer.videoHeight;
+
+			this.ctx = this.canvas.getContext('2d');
+
+			// TEMP: append
+			document.querySelector('body').appendChild(this.canvas);
+		}
+	}, {
+		key: 'update',
+		value: function update() {
+			if (this.videoPlayer.video.paused || this.videoPlayer.video.ended) return;
+
+			this.ctx.drawImage(this.videoPlayer.video, 0, 0, this.canvas.width, this.canvas.width);
+			var frame = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+			// console.log(frame.data.length);
+		}
+	}, {
+		key: 'play',
+		value: function play(time) {
+			this.videoPlayer.play(time);
+		}
+	}, {
+		key: 'pause',
+		value: function pause() {
+			this.videoPlayer.pause();
+		}
+	}, {
+		key: 'resize',
+		value: function resize() {}
+	}]);
+
+	return VideoCanvas;
+}();
+
+exports.default = VideoCanvas;
+
+},{"./VideoPlayer":16}],16:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var VideoPlayer = function () {
 	function VideoPlayer() {
 		_classCallCheck(this, VideoPlayer);
 
+		// get video from DOM
 		this.video = document.querySelector('video');
+
+		// remove video from DOM
+		document.querySelector('body').removeChild(this.video);
+
+		// create video element
+		// this.video = document.createElement('video');
+		// this.video.src = 'video/Sequence 256x256.mp4';
+		// this.video.width = this.video.height = 256;
 
 		// store original video size
 		// this.videoWidth = this.video.width;
 		// this.videoHeight = this.video.height;
+
+		// fixed video dimensions
 		this.videoWidth = 256;
 		this.videoHeight = 169;
 

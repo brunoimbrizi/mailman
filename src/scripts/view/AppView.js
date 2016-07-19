@@ -3,6 +3,7 @@ import AppThree from './AppThree';
 import AppUI from './AppUI';
 import AppAudio from '../audio/AppAudio';
 import VideoPlayer from './video/VideoPlayer';
+import VideoCanvas from './video/VideoCanvas';
 
 export default class AppView {
 
@@ -38,6 +39,7 @@ export default class AppView {
 			this.audio.update();
 			this.two.update();
 			this.three.update();
+			this.video.update();
 		};
 
 		this.sketch.draw = () => {
@@ -83,7 +85,8 @@ export default class AppView {
 	}
 
 	initVideo() {
-		this.video = new VideoPlayer();
+		// this.video = new VideoPlayer();
+		this.video = new VideoCanvas();
 	}
 
 	initUI() {

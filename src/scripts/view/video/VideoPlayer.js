@@ -1,11 +1,22 @@
 export default class VideoPlayer {
 
 	constructor() {
+		// get video from DOM
 		this.video = document.querySelector('video');
+		
+		// remove video from DOM
+		document.querySelector('body').removeChild(this.video);
+
+		// create video element
+		// this.video = document.createElement('video');
+		// this.video.src = 'video/Sequence 256x256.mp4';
+		// this.video.width = this.video.height = 256;
 
 		// store original video size
 		// this.videoWidth = this.video.width;
 		// this.videoHeight = this.video.height;
+
+		// fixed video dimensions
 		this.videoWidth = 256;
 		this.videoHeight = 169;
 
