@@ -1,4 +1,5 @@
 import Grid from './grid/Grid';
+import VideoCloud from './video/VideoCloud';
 
 export default class AppThree {
 
@@ -14,6 +15,7 @@ export default class AppThree {
 		this.initLights();
 		// this.initObject();
 		this.initGrid();
+		this.initVideoCloud();
 	}
 
 	initThree() {
@@ -59,7 +61,12 @@ export default class AppThree {
 
 	initGrid() {
 		this.grid = new Grid();
-		this.scene.add(this.grid.container);
+		// this.scene.add(this.grid.container);
+	}
+
+	initVideoCloud() {
+		this.videoCloud = new VideoCloud(this.view.video);
+		this.scene.add(this.videoCloud.container);
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -70,7 +77,8 @@ export default class AppThree {
 		if (!this.visible) return;
 
 		this.controls.update();
-		this.grid.update(this.audio.values);
+		// this.grid.update(this.audio.values);
+		this.videoCloud.update();
 	}
 
 	draw() {

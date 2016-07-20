@@ -29,9 +29,9 @@ export default class AppView {
 		});
 
 		this.sketch.setup = () => {
+			this.initVideo();
 			this.initTwo();
 			this.initThree();
-			this.initVideo();
 			this.initUI();
 		};
 

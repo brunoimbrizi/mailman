@@ -535,6 +535,10 @@ var _Grid = require('./grid/Grid');
 
 var _Grid2 = _interopRequireDefault(_Grid);
 
+var _VideoCloud = require('./video/VideoCloud');
+
+var _VideoCloud2 = _interopRequireDefault(_VideoCloud);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -554,6 +558,7 @@ var AppThree = function () {
 		this.initLights();
 		// this.initObject();
 		this.initGrid();
+		this.initVideoCloud();
 	}
 
 	_createClass(AppThree, [{
@@ -605,7 +610,13 @@ var AppThree = function () {
 		key: 'initGrid',
 		value: function initGrid() {
 			this.grid = new _Grid2.default();
-			this.scene.add(this.grid.container);
+			// this.scene.add(this.grid.container);
+		}
+	}, {
+		key: 'initVideoCloud',
+		value: function initVideoCloud() {
+			this.videoCloud = new _VideoCloud2.default(this.view.video);
+			this.scene.add(this.videoCloud.container);
 		}
 
 		// ---------------------------------------------------------------------------------------------
@@ -618,7 +629,8 @@ var AppThree = function () {
 			if (!this.visible) return;
 
 			this.controls.update();
-			this.grid.update(this.audio.values);
+			// this.grid.update(this.audio.values);
+			this.videoCloud.update();
 		}
 	}, {
 		key: 'draw',
@@ -654,7 +666,7 @@ var AppThree = function () {
 
 exports.default = AppThree;
 
-},{"./grid/Grid":12}],8:[function(require,module,exports){
+},{"./grid/Grid":12,"./video/VideoCloud":16}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -898,9 +910,9 @@ var AppView = function () {
 			});
 
 			this.sketch.setup = function () {
+				_this.initVideo();
 				_this.initTwo();
 				_this.initThree();
-				_this.initVideo();
 				_this.initUI();
 			};
 
@@ -981,7 +993,7 @@ var AppView = function () {
 
 exports.default = AppView;
 
-},{"../audio/AppAudio":2,"./AppThree":7,"./AppTwo":8,"./AppUI":9,"./video/VideoCanvas":15,"./video/VideoPlayer":16}],11:[function(require,module,exports){
+},{"../audio/AppAudio":2,"./AppThree":7,"./AppTwo":8,"./AppUI":9,"./video/VideoCanvas":15,"./video/VideoPlayer":17}],11:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1321,8 +1333,8 @@ var VideoCanvas = function () {
 		value: function update() {
 			if (this.videoPlayer.video.paused || this.videoPlayer.video.ended) return;
 
-			this.ctx.drawImage(this.videoPlayer.video, 0, 0, this.canvas.width, this.canvas.width);
-			var frame = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+			this.ctx.drawImage(this.videoPlayer.video, 0, 0, this.canvas.width, this.canvas.height);
+			this.data = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
 			// console.log(frame.data.length);
 		}
 	}, {
@@ -1345,7 +1357,180 @@ var VideoCanvas = function () {
 
 exports.default = VideoCanvas;
 
-},{"./VideoPlayer":16}],16:[function(require,module,exports){
+},{"./VideoPlayer":17}],16:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var VideoCloud = function () {
+	function VideoCloud(videoCanvas) {
+		_classCallCheck(this, VideoCloud);
+
+		this.videoCanvas = videoCanvas;
+		this.container = new THREE.Object3D();
+
+		this.initCloud();
+	}
+
+	_createClass(VideoCloud, [{
+		key: 'initCloud',
+		value: function initCloud() {
+			/*
+   const geometry = new THREE.Geometry();
+   	for (let i = 0; i < 20000; i++) {
+   	const vertex = new THREE.Vector3();
+   	vertex.x = Math.random() * 2000 - 1000;
+   	vertex.y = Math.random() * 2000 - 1000;
+   	vertex.z = Math.random() * 2000 - 1000;
+   		geometry.vertices.push(vertex);
+   }
+   	const material = new THREE.PointsMaterial({ size: 2 });
+   	const points = new THREE.Points(geometry, material);
+   this.container.add(points);
+   */
+
+			var cols = 128;
+			var rows = 84;
+			var maxParticleCount = cols * rows;
+			var w = window.innerWidth / cols;
+			var h = window.innerHeight / rows;
+
+			// const positions = new Float32Array( segments * 3 );
+			// const colors = new Float32Array( segments * 3 );
+
+			var material = new THREE.PointsMaterial({
+				vertexColors: THREE.VertexColors,
+				// color: 0xFFFFFF,
+				size: 3,
+				blending: THREE.AdditiveBlending,
+				// transparent: true,
+				sizeAttenuation: false
+			});
+
+			var geometry = new THREE.BufferGeometry();
+			var positions = new Float32Array(maxParticleCount * 3);
+			var colors = new Float32Array(maxParticleCount * 3);
+			var data = [];
+
+			for (var i = 0; i < maxParticleCount; i++) {
+				var col = i % cols;
+				var row = floor(i / cols);
+
+				var x = col * w - window.innerWidth / 2;
+				var y = row * -h + window.innerHeight / 2;
+				var z = 0;
+
+				positions[i * 3] = x;
+				positions[i * 3 + 1] = y;
+				positions[i * 3 + 2] = z;
+
+				// add it to the geometry
+				data.push({
+					// velocity: new THREE.Vector3( -1 + Math.random() * 2, -1 + Math.random() * 2,  -1 + Math.random() * 2 )
+					velocity: new THREE.Vector3()
+				});
+			}
+
+			geometry.setDrawRange(0, maxParticleCount);
+			geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3).setDynamic(true));
+			geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3).setDynamic(true));
+
+			this.points = new THREE.Points(geometry, material);
+			this.container.add(this.points);
+
+			this.maxParticleCount = maxParticleCount;
+			this.positions = positions;
+			this.colors = colors;
+			this.data = data;
+		}
+	}, {
+		key: 'update',
+		value: function update() {
+			var scale = 2; // actually divided by 2
+
+			for (var i = 0; i < this.maxParticleCount; i++) {
+
+				// const imgCol = i * 4 * scale;
+				// const imgRow = ((i * 4) / (cols * scale))
+
+				// get the particle
+				var grey = this.videoCanvas.data[i * 4] / 255;
+				var particleData = this.data[i];
+
+				// this.positions[ i * 3     ] += particleData.velocity.x;
+				// this.positions[ i * 3 + 1 ] += particleData.velocity.y;
+				// this.positions[ i * 3 + 2 ] += particleData.velocity.z;
+
+				// this.positions[ i * 3 + 2 ] += (grey * 100 - this.positions[ i * 3 + 2 ]) * 0.01;
+
+				// this.positions[ i * 3 + 2 ] += grey;
+				this.positions[i * 3 + 2] = grey * 100;
+
+				this.colors[i * 3 + 0] = grey;
+				this.colors[i * 3 + 1] = grey;
+				this.colors[i * 3 + 2] = grey;
+
+				// if ( this.positions[ i * 3 + 1 ] < -rHalf || this.positions[ i * 3 + 1 ] > rHalf )
+				// particleData.velocity.y = -particleData.velocity.y;
+
+				// if ( this.positions[ i * 3 ] < -rHalf || this.positions[ i * 3 ] > rHalf )
+				// particleData.velocity.x = -particleData.velocity.x;
+
+				// if ( this.positions[ i * 3 + 2 ] < -rHalf || this.positions[ i * 3 + 2 ] > rHalf )
+				// particleData.velocity.z = -particleData.velocity.z;
+
+				// if ( effectController.limitConnections && particleData.numConnections >= effectController.maxConnections )
+				// continue;
+
+				/*
+    // Check collision
+    for (let j = i + 1; j < this.maxParticleCount; j++) {
+    		const particleDataB = this.data[ j ];
+    	// if ( effectController.limitConnections && particleDataB.numConnections >= effectController.maxConnections )
+    		// continue;
+    		const dx = this.positions[ i * 3     ] - this.positions[ j * 3     ];
+    	const dy = this.positions[ i * 3 + 1 ] - this.positions[ j * 3 + 1 ];
+    	const dz = this.positions[ i * 3 + 2 ] - this.positions[ j * 3 + 2 ];
+    	const dist = Math.sqrt( dx * dx + dy * dy + dz * dz );
+    		if ( dist < effectController.minDistance ) {
+    			particleData.numConnections++;
+    		particleDataB.numConnections++;
+    			const alpha = 1.0 - dist / effectController.minDistance;
+    			positions[ vertexpos++ ] = this.positions[ i * 3     ];
+    		positions[ vertexpos++ ] = this.positions[ i * 3 + 1 ];
+    		positions[ vertexpos++ ] = this.positions[ i * 3 + 2 ];
+    			positions[ vertexpos++ ] = this.positions[ j * 3     ];
+    		positions[ vertexpos++ ] = this.positions[ j * 3 + 1 ];
+    		positions[ vertexpos++ ] = this.positions[ j * 3 + 2 ];
+    			colors[ colorpos++ ] = alpha;
+    		colors[ colorpos++ ] = alpha;
+    		colors[ colorpos++ ] = alpha;
+    			colors[ colorpos++ ] = alpha;
+    		colors[ colorpos++ ] = alpha;
+    		colors[ colorpos++ ] = alpha;
+    			numConnected++;
+    	}
+    }
+    */
+			}
+
+			this.points.geometry.attributes.position.needsUpdate = true;
+			this.points.geometry.attributes.color.needsUpdate = true;
+		}
+	}]);
+
+	return VideoCloud;
+}();
+
+exports.default = VideoCloud;
+
+},{}],17:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1372,12 +1557,12 @@ var VideoPlayer = function () {
 		// this.video.width = this.video.height = 256;
 
 		// store original video size
-		// this.videoWidth = this.video.width;
-		// this.videoHeight = this.video.height;
+		this.videoWidth = this.video.width;
+		this.videoHeight = this.video.height;
 
 		// fixed video dimensions
-		this.videoWidth = 256;
-		this.videoHeight = 169;
+		// this.videoWidth = 256;
+		// this.videoHeight = 168;
 
 		// clear width and height attributes from video tag
 		this.video.removeAttribute('width');

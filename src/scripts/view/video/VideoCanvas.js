@@ -24,9 +24,9 @@ export default class VideoCanvas {
 
 	update() {
 		if (this.videoPlayer.video.paused || this.videoPlayer.video.ended) return;
-		
-		this.ctx.drawImage(this.videoPlayer.video, 0, 0, this.canvas.width, this.canvas.width);
-		let frame = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+
+		this.ctx.drawImage(this.videoPlayer.video, 0, 0, this.canvas.width, this.canvas.height);
+		this.data = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
 		// console.log(frame.data.length);
 	}
 

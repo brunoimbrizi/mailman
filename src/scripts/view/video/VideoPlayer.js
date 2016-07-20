@@ -13,12 +13,12 @@ export default class VideoPlayer {
 		// this.video.width = this.video.height = 256;
 
 		// store original video size
-		// this.videoWidth = this.video.width;
-		// this.videoHeight = this.video.height;
+		this.videoWidth = this.video.width;
+		this.videoHeight = this.video.height;
 
 		// fixed video dimensions
-		this.videoWidth = 256;
-		this.videoHeight = 169;
+		// this.videoWidth = 256;
+		// this.videoHeight = 168;
 
 		// clear width and height attributes from video tag
 		this.video.removeAttribute('width');
