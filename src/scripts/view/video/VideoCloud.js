@@ -39,18 +39,21 @@ export default class VideoCloud {
 		// const positions = new Float32Array( segments * 3 );
 		// const colors = new Float32Array( segments * 3 );
 
-		const material = new THREE.PointsMaterial({
+		const material = new THREE.MeshBasicMaterial({
 			vertexColors: THREE.VertexColors,
 			// color: 0xFFFFFF,
 			size: 3,
 			blending: THREE.AdditiveBlending,
 			// transparent: true,
-			sizeAttenuation: false
+			// sizeAttenuation: false
+			wireframe: true
 		});
 
 		const geometry = new THREE.BufferGeometry();
-		const positions = new Float32Array(maxParticleCount * 3);
-		const colors = new Float32Array(maxParticleCount * 3);
+		const positions = new Float32Array(maxParticleCount * 3 * 2); // twice as many rows
+		const anchors = new Float32Array(maxParticleCount * 3);
+		const colors = new Float32Array(maxParticleCount * 3 * 2);
+		const indices = new Uint32Array(maxParticleCount * 3 * 2);
 		const data = [];
 		
 		for (let i = 0; i < maxParticleCount; i++) {
@@ -61,41 +64,63 @@ export default class VideoCloud {
 			const y = row * -h + height / 2;
 			const z = 0;
 
-			positions[ i * 3     ] = x;
+			positions[ i * 3 + 0 ] = x;
 			positions[ i * 3 + 1 ] = y;
 			positions[ i * 3 + 2 ] = z;
 
+			// duplicate all positions at the end of the array
+			positions[ (i + maxParticleCount) * 3 + 0 ] = x;
+			positions[ (i + maxParticleCount) * 3 + 1 ] = y;
+			positions[ (i + maxParticleCount) * 3 + 2 ] = z;
+
+			// save original positions
+			anchors[ i * 3 + 0 ] = x;
+			anchors[ i * 3 + 1 ] = y;
+			anchors[ i * 3 + 2 ] = z;
+
+			// set indices
+			// indices[ i * 6 + 0 ] = ;
+
 			// add it to the geometry
-			data.push( {
+			// data.push( {
 				// velocity: new THREE.Vector3( -1 + Math.random() * 2, -1 + Math.random() * 2,  -1 + Math.random() * 2 )
 				velocity: new THREE.Vector3()
-			});
+			// });
 		}
 
-		geometry.setDrawRange(0, maxParticleCount);
+		geometry.setDrawRange(0, maxParticleCount * 2);
 		geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3).setDynamic(true));
 		geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3).setDynamic(true));
+		// geometry.addAttribute('anchor', new THREE.BufferAttribute(anchors, 3).setDynamic(false));
 
-		this.points = new THREE.Points(geometry, material);
+		// this.points = new THREE.Points(geometry, material);
+		// this.points = new THREE.Line(geometry, material);
+		this.points = new THREE.Mesh(geometry, material);
 		this.container.add(this.points);
 
 		this.maxParticleCount = maxParticleCount;
 		this.positions = positions;
 		this.colors = colors;
+		this.anchors = anchors;
 		this.data = data;
 	}
 
 	update() {
+		// return;
 		if (!this.videoCanvas.data) return;
 
-		for (let i = 0; i < this.maxParticleCount; i++ ) {
+		const cols = 128;
+		const rows = 84;
 
-			// const imgCol = i * 4 * scale;
-			// const imgRow = ((i * 4) / (cols * scale))
+		for (let i = 0; i < this.maxParticleCount; i++ ) {
 
 			// get the particle
 			const grey = this.videoCanvas.data[i * 4] / 255;
 			const particleData = this.data[i];
+
+			const row = floor(i / cols);
+
+			// const j = row * cols * 3;
 
 			// this.positions[ i * 3     ] += particleData.velocity.x;
 			// this.positions[ i * 3 + 1 ] += particleData.velocity.y;
@@ -103,12 +128,18 @@ export default class VideoCloud {
 
 			// this.positions[ i * 3 + 2 ] += (grey * 100 - this.positions[ i * 3 + 2 ]) * 0.01;
 
-			// this.positions[ i * 3 + 2 ] += grey;
-			this.positions[ i * 3 + 2 ] = grey * 200;
+			// y
+			this.positions[ i * 3 + 1 ] = this.anchors[ i * 3 + 1 ] + grey * 10;
+			this.positions[ (i + this.maxParticleCount) * 3 + 1 ] = this.anchors[ (i + this.maxParticleCount) * 3 + 1 ] + grey * -10;
+
+			// z
+			// this.positions[ i * 3 + 2 ] = grey * 20;
+			// this.positions[ (i + this.maxParticleCount) * 3 + 2 ] = grey * -20;
 
 			this.colors[i * 3 + 0] = grey;
 			this.colors[i * 3 + 1] = grey;
 			this.colors[i * 3 + 2] = grey;
+
 
 			// if ( this.positions[ i * 3 + 1 ] < -rHalf || this.positions[ i * 3 + 1 ] > rHalf )
 				// particleData.velocity.y = -particleData.velocity.y;
