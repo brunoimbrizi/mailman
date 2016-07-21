@@ -40,13 +40,13 @@ export default class VideoCloud {
 		// const colors = new Float32Array( segments * 3 );
 
 		const material = new THREE.MeshBasicMaterial({
-			vertexColors: THREE.VertexColors,
-			// color: 0xFFFFFF,
+			// vertexColors: THREE.VertexColors,
+			color: 0xFFFFFF,
 			size: 3,
 			blending: THREE.AdditiveBlending,
 			// transparent: true,
 			// sizeAttenuation: false
-			wireframe: true
+			// wireframe: true
 		});
 
 		const geometry = new THREE.BufferGeometry();
@@ -70,28 +70,44 @@ export default class VideoCloud {
 
 			// duplicate all positions at the end of the array
 			positions[ (i + maxParticleCount) * 3 + 0 ] = x;
-			positions[ (i + maxParticleCount) * 3 + 1 ] = y;
+			positions[ (i + maxParticleCount) * 3 + 1 ] = y + 5;
 			positions[ (i + maxParticleCount) * 3 + 2 ] = z;
 
 			// save original positions
 			anchors[ i * 3 + 0 ] = x;
 			anchors[ i * 3 + 1 ] = y;
 			anchors[ i * 3 + 2 ] = z;
-
-			// set indices
-			// indices[ i * 6 + 0 ] = ;
-
-			// add it to the geometry
-			// data.push( {
-				// velocity: new THREE.Vector3( -1 + Math.random() * 2, -1 + Math.random() * 2,  -1 + Math.random() * 2 )
-				velocity: new THREE.Vector3()
-			// });
 		}
 
-		geometry.setDrawRange(0, maxParticleCount * 2);
+		// set indices
+		let offset = 0;
+
+		for (let ix = 0; ix < cols - 1; ix++) {
+			for (let iy = 0; iy < rows; iy++) {
+
+				const a = ix + cols * iy;
+				const b = ix + cols * iy + 1;
+				const c = ix + cols * iy + maxParticleCount + 1;
+				const d = ix + cols * iy + maxParticleCount;
+
+				indices[ offset + 0 ] = a;
+				indices[ offset + 1 ] = b;
+				indices[ offset + 2 ] = d;
+
+				indices[ offset + 3 ] = d;
+				indices[ offset + 4 ] = b;
+				indices[ offset + 5 ] = c;
+
+				offset += 6;
+			}
+		}
+
+		geometry.setDrawRange(0, indices.length);
+		geometry.setIndex(new THREE.BufferAttribute( indices, 1 ));
 		geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3).setDynamic(true));
 		geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3).setDynamic(true));
-		// geometry.addAttribute('anchor', new THREE.BufferAttribute(anchors, 3).setDynamic(false));
+
+		geometry.computeBoundingSphere();
 
 		// this.points = new THREE.Points(geometry, material);
 		// this.points = new THREE.Line(geometry, material);
@@ -129,16 +145,16 @@ export default class VideoCloud {
 			// this.positions[ i * 3 + 2 ] += (grey * 100 - this.positions[ i * 3 + 2 ]) * 0.01;
 
 			// y
-			this.positions[ i * 3 + 1 ] = this.anchors[ i * 3 + 1 ] + grey * 10;
-			this.positions[ (i + this.maxParticleCount) * 3 + 1 ] = this.anchors[ (i + this.maxParticleCount) * 3 + 1 ] + grey * -10;
+			this.positions[ i * 3 + 1 ] = this.anchors[ i * 3 + 1 ] + grey * -2;
+			this.positions[ (i + this.maxParticleCount) * 3 + 1 ] = this.anchors[ i * 3 + 1 ] + grey * 2;
 
 			// z
 			// this.positions[ i * 3 + 2 ] = grey * 20;
 			// this.positions[ (i + this.maxParticleCount) * 3 + 2 ] = grey * -20;
 
-			this.colors[i * 3 + 0] = grey;
-			this.colors[i * 3 + 1] = grey;
-			this.colors[i * 3 + 2] = grey;
+			// this.colors[i * 3 + 0] = grey;
+			// this.colors[i * 3 + 1] = grey;
+			// this.colors[i * 3 + 2] = grey;
 
 
 			// if ( this.positions[ i * 3 + 1 ] < -rHalf || this.positions[ i * 3 + 1 ] > rHalf )
