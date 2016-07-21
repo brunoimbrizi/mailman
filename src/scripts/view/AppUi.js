@@ -13,6 +13,7 @@ export default class AppUI {
 		this.rangeThreshold = [0, 2];
 
 		this.barsVisible = this.view.two.bars.visible;
+		this.trailVisible = this.view.two.trail.visible;
 
 		this.threeVisible = this.view.three.visible;
 
@@ -43,8 +44,9 @@ export default class AppUI {
 		.addSlider(this, 'kickThreshold', 'range', { onChange: () => { that.onAudioChange(); } })
 		.addSlider(this, 'volume', 'range', { onChange: () => { that.onAudioChange(); } })
 
-		.addGroup({label: 'Bars'})
-		.addCheckbox(this, 'barsVisible', { onChange: () => { that.onBarsChange(); } })
+		.addGroup({label: 'Two'})
+		.addCheckbox(this, 'barsVisible', { onChange: () => { that.onTwoChange(); } })
+		.addCheckbox(this, 'trailVisible', { onChange: () => { that.onTwoChange(); } })
 
 		.addGroup({label: 'Three'})
 		.addCheckbox(this, 'threeVisible', { onChange: () => { that.onThreeChange(); } })
@@ -58,8 +60,9 @@ export default class AppUI {
 		this.audio.kickThreshold = this.kickThreshold;
 	}
 
-	onBarsChange() {
+	onTwoChange() {
 		this.view.two.bars.visible = this.barsVisible;
+		this.view.two.trail.visible = this.trailVisible;
 	}
 
 	onThreeChange() {

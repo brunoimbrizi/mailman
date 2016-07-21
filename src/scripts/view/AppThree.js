@@ -8,7 +8,7 @@ export default class AppThree {
 		this.audio = audio;
 		this.renderer = this.view.renderer;
 
-		this.visible = false;
+		this.visible = true;
 
 		this.initThree();
 		this.initControls();

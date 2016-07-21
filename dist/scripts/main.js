@@ -551,7 +551,7 @@ var AppThree = function () {
 		this.audio = audio;
 		this.renderer = this.view.renderer;
 
-		this.visible = false;
+		this.visible = true;
 
 		this.initThree();
 		this.initControls();
@@ -780,6 +780,7 @@ var AppUI = function () {
 		this.rangeThreshold = [0, 2];
 
 		this.barsVisible = this.view.two.bars.visible;
+		this.trailVisible = this.view.two.trail.visible;
 
 		this.threeVisible = this.view.three.visible;
 
@@ -812,8 +813,10 @@ var AppUI = function () {
 					that.onAudioChange();
 				} }).addSlider(this, 'volume', 'range', { onChange: function onChange() {
 					that.onAudioChange();
-				} }).addGroup({ label: 'Bars' }).addCheckbox(this, 'barsVisible', { onChange: function onChange() {
-					that.onBarsChange();
+				} }).addGroup({ label: 'Two' }).addCheckbox(this, 'barsVisible', { onChange: function onChange() {
+					that.onTwoChange();
+				} }).addCheckbox(this, 'trailVisible', { onChange: function onChange() {
+					that.onTwoChange();
 				} }).addGroup({ label: 'Three' }).addCheckbox(this, 'threeVisible', { onChange: function onChange() {
 					that.onThreeChange();
 				} });
@@ -828,9 +831,10 @@ var AppUI = function () {
 			this.audio.kickThreshold = this.kickThreshold;
 		}
 	}, {
-		key: 'onBarsChange',
-		value: function onBarsChange() {
+		key: 'onTwoChange',
+		value: function onTwoChange() {
 			this.view.two.bars.visible = this.barsVisible;
+			this.view.two.trail.visible = this.trailVisible;
 		}
 	}, {
 		key: 'onThreeChange',
@@ -1011,7 +1015,7 @@ var AudioBars = function () {
 		this.ctx = ctx;
 		this.audio = audio;
 
-		this.visible = true;
+		this.visible = false;
 	}
 
 	_createClass(AudioBars, [{
@@ -1234,11 +1238,15 @@ var AudioTrail = function () {
 		this.pos = new THREE.Vector2();
 		this.vel = new THREE.Vector2(-2, 0);
 		this.rects = [];
+
+		this.visible = false;
 	}
 
 	_createClass(AudioTrail, [{
 		key: 'draw',
 		value: function draw() {
+			if (!this.visible) return;
+
 			// this.pos.x += this.vel.x;
 			this.pos.x = this.audio.currentTime * -0.5;
 
@@ -1398,8 +1406,12 @@ var VideoCloud = function () {
 			var cols = 128;
 			var rows = 84;
 			var maxParticleCount = cols * rows;
-			var w = window.innerWidth / cols;
-			var h = window.innerHeight / rows;
+
+			var width = window.innerWidth / 2;
+			var height = width / (cols / rows);
+
+			var w = width / cols;
+			var h = height / rows;
 
 			// const positions = new Float32Array( segments * 3 );
 			// const colors = new Float32Array( segments * 3 );
@@ -1422,8 +1434,8 @@ var VideoCloud = function () {
 				var col = i % cols;
 				var row = floor(i / cols);
 
-				var x = col * w - window.innerWidth / 2;
-				var y = row * -h + window.innerHeight / 2;
+				var x = col * w - width / 2;
+				var y = row * -h + height / 2;
 				var z = 0;
 
 				positions[i * 3] = x;
@@ -1452,7 +1464,7 @@ var VideoCloud = function () {
 	}, {
 		key: 'update',
 		value: function update() {
-			var scale = 2; // actually divided by 2
+			if (!this.videoCanvas.data) return;
 
 			for (var i = 0; i < this.maxParticleCount; i++) {
 
@@ -1470,7 +1482,7 @@ var VideoCloud = function () {
 				// this.positions[ i * 3 + 2 ] += (grey * 100 - this.positions[ i * 3 + 2 ]) * 0.01;
 
 				// this.positions[ i * 3 + 2 ] += grey;
-				this.positions[i * 3 + 2] = grey * 100;
+				this.positions[i * 3 + 2] = grey * 200;
 
 				this.colors[i * 3 + 0] = grey;
 				this.colors[i * 3 + 1] = grey;

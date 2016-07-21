@@ -7,9 +7,13 @@ export default class AudioTrail {
 		this.pos = new THREE.Vector2();
 		this.vel = new THREE.Vector2(-2, 0);
 		this.rects = [];
+
+		this.visible = false;
 	}
 
 	draw() {
+		if (!this.visible) return;
+		
 		// this.pos.x += this.vel.x;
 		this.pos.x = this.audio.currentTime * -0.5;
 

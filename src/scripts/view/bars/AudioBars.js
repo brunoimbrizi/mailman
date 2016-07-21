@@ -4,7 +4,7 @@ export default class AudioBars {
 		this.ctx = ctx;
 		this.audio = audio;
 
-		this.visible = true;
+		this.visible = false;
 	}
 
 	update() {

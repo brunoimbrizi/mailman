@@ -29,8 +29,12 @@ export default class VideoCloud {
 		const cols = 128;
 		const rows = 84;
 		const maxParticleCount = cols * rows;
-		const w = window.innerWidth / cols;
-		const h = window.innerHeight / rows;
+		
+		const width = window.innerWidth / 2;
+		const height = width / (cols / rows);
+		
+		const w = width / cols;
+		const h = height / rows;
 
 		// const positions = new Float32Array( segments * 3 );
 		// const colors = new Float32Array( segments * 3 );
@@ -53,8 +57,8 @@ export default class VideoCloud {
 			const col = i % cols;
 			const row = floor(i / cols);
 
-			const x = col * w - window.innerWidth / 2;
-			const y = row * -h + window.innerHeight / 2;
+			const x = col * w - width / 2;
+			const y = row * -h + height / 2;
 			const z = 0;
 
 			positions[ i * 3     ] = x;
@@ -82,7 +86,7 @@ export default class VideoCloud {
 	}
 
 	update() {
-		const scale = 2; // actually divided by 2
+		if (!this.videoCanvas.data) return;
 
 		for (let i = 0; i < this.maxParticleCount; i++ ) {
 
@@ -100,7 +104,7 @@ export default class VideoCloud {
 			// this.positions[ i * 3 + 2 ] += (grey * 100 - this.positions[ i * 3 + 2 ]) * 0.01;
 
 			// this.positions[ i * 3 + 2 ] += grey;
-			this.positions[ i * 3 + 2 ] = grey * 100;
+			this.positions[ i * 3 + 2 ] = grey * 200;
 
 			this.colors[i * 3 + 0] = grey;
 			this.colors[i * 3 + 1] = grey;
