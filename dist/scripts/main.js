@@ -569,7 +569,7 @@ var AppThree = function () {
 
 			// camera
 			this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
-			this.camera.position.z = 300;
+			this.camera.position.z = 480;
 		}
 	}, {
 		key: 'initControls',
@@ -778,11 +778,16 @@ var AppUI = function () {
 
 		this.range = [0, 1];
 		this.rangeThreshold = [0, 2];
+		this.rangeZ = [-100, 100];
 
 		this.barsVisible = this.view.two.bars.visible;
 		this.trailVisible = this.view.two.trail.visible;
 
 		this.threeVisible = this.view.three.visible;
+
+		this.cloudZa = 50;
+		this.cloudZb = this.cloudZa;
+		this.cloudHills = false;
 
 		this.initControlKit();
 	}
@@ -819,6 +824,10 @@ var AppUI = function () {
 					that.onTwoChange();
 				} }).addGroup({ label: 'Three' }).addCheckbox(this, 'threeVisible', { onChange: function onChange() {
 					that.onThreeChange();
+				} }).addGroup({ label: 'VideoCloud' }).addSlider(this, 'cloudZa', 'rangeZ', { onChange: function onChange() {
+					that.onCloudChange();
+				} }).addSlider(this, 'cloudZb', 'rangeZ', { onChange: function onChange() {
+					that.onCloudChange();
 				} });
 		}
 	}, {
@@ -840,6 +849,12 @@ var AppUI = function () {
 		key: 'onThreeChange',
 		value: function onThreeChange() {
 			this.view.three.visible = this.threeVisible;
+		}
+	}, {
+		key: 'onCloudChange',
+		value: function onCloudChange() {
+			this.view.three.videoCloud.cloudZa = this.cloudZa;
+			this.view.three.videoCloud.cloudZb = this.cloudZb;
 		}
 	}]);
 
@@ -1383,6 +1398,10 @@ var VideoCloud = function () {
 		this.videoCanvas = videoCanvas;
 		this.container = new THREE.Object3D();
 
+		this.cloudZa = 50;
+		this.cloudZb = this.cloudZa;
+		this.cloudThickness = 2;
+
 		this.initCloud();
 	}
 
@@ -1417,15 +1436,16 @@ var VideoCloud = function () {
 			// const colors = new Float32Array( segments * 3 );
 
 			var material = new THREE.MeshBasicMaterial({
-				// vertexColors: THREE.VertexColors,
-				color: 0xFFFFFF,
+				vertexColors: THREE.VertexColors,
+				// color: 0xFFFFFF,
 				size: 3,
-				blending: THREE.AdditiveBlending
+				blending: THREE.AdditiveBlending,
+				side: THREE.DoubleSide
+				// transparent: true,
+				// sizeAttenuation: false
+				// wireframe: true
 			});
 
-			// transparent: true,
-			// sizeAttenuation: false
-			// wireframe: true
 			var geometry = new THREE.BufferGeometry();
 			var positions = new Float32Array(maxParticleCount * 3 * 2); // twice as many rows
 			var anchors = new Float32Array(maxParticleCount * 3);
@@ -1447,7 +1467,7 @@ var VideoCloud = function () {
 
 				// duplicate all positions at the end of the array
 				positions[(i + maxParticleCount) * 3 + 0] = x;
-				positions[(i + maxParticleCount) * 3 + 1] = y + 5;
+				positions[(i + maxParticleCount) * 3 + 1] = y;
 				positions[(i + maxParticleCount) * 3 + 2] = z;
 
 				// save original positions
@@ -1512,7 +1532,7 @@ var VideoCloud = function () {
 				var grey = this.videoCanvas.data[i * 4] / 255;
 				var particleData = this.data[i];
 
-				var row = floor(i / cols);
+				// const row = floor(i / cols);
 
 				// const j = row * cols * 3;
 
@@ -1522,60 +1542,26 @@ var VideoCloud = function () {
 
 				// this.positions[ i * 3 + 2 ] += (grey * 100 - this.positions[ i * 3 + 2 ]) * 0.01;
 
-				// y
-				this.positions[i * 3 + 1] = this.anchors[i * 3 + 1] + grey * -2;
-				this.positions[(i + this.maxParticleCount) * 3 + 1] = this.anchors[i * 3 + 1] + grey * 2;
+				// top
+				var a = i * 3;
+				// bottom
+				var b = (i + this.maxParticleCount) * 3;
 
-				// z
-				// this.positions[ i * 3 + 2 ] = grey * 20;
-				// this.positions[ (i + this.maxParticleCount) * 3 + 2 ] = grey * -20;
+				this.positions[a + 1] = this.anchors[a + 1] + grey * this.cloudThickness * -1;
+				this.positions[b + 1] = this.anchors[a + 1] + grey * this.cloudThickness;
 
-				// this.colors[i * 3 + 0] = grey;
-				// this.colors[i * 3 + 1] = grey;
-				// this.colors[i * 3 + 2] = grey;
+				this.positions[a + 2] = this.anchors[a + 2] + grey * this.cloudZa;
+				this.positions[b + 2] = this.anchors[a + 2] + grey * this.cloudZb;
 
-				// if ( this.positions[ i * 3 + 1 ] < -rHalf || this.positions[ i * 3 + 1 ] > rHalf )
-				// particleData.velocity.y = -particleData.velocity.y;
+				var color = grey > 0.2 ? 1 : 0;
 
-				// if ( this.positions[ i * 3 ] < -rHalf || this.positions[ i * 3 ] > rHalf )
-				// particleData.velocity.x = -particleData.velocity.x;
+				this.colors[a + 0] = color;
+				this.colors[a + 1] = color;
+				this.colors[a + 2] = color;
 
-				// if ( this.positions[ i * 3 + 2 ] < -rHalf || this.positions[ i * 3 + 2 ] > rHalf )
-				// particleData.velocity.z = -particleData.velocity.z;
-
-				// if ( effectController.limitConnections && particleData.numConnections >= effectController.maxConnections )
-				// continue;
-
-				/*
-    // Check collision
-    for (let j = i + 1; j < this.maxParticleCount; j++) {
-    		const particleDataB = this.data[ j ];
-    	// if ( effectController.limitConnections && particleDataB.numConnections >= effectController.maxConnections )
-    		// continue;
-    		const dx = this.positions[ i * 3     ] - this.positions[ j * 3     ];
-    	const dy = this.positions[ i * 3 + 1 ] - this.positions[ j * 3 + 1 ];
-    	const dz = this.positions[ i * 3 + 2 ] - this.positions[ j * 3 + 2 ];
-    	const dist = Math.sqrt( dx * dx + dy * dy + dz * dz );
-    		if ( dist < effectController.minDistance ) {
-    			particleData.numConnections++;
-    		particleDataB.numConnections++;
-    			const alpha = 1.0 - dist / effectController.minDistance;
-    			positions[ vertexpos++ ] = this.positions[ i * 3     ];
-    		positions[ vertexpos++ ] = this.positions[ i * 3 + 1 ];
-    		positions[ vertexpos++ ] = this.positions[ i * 3 + 2 ];
-    			positions[ vertexpos++ ] = this.positions[ j * 3     ];
-    		positions[ vertexpos++ ] = this.positions[ j * 3 + 1 ];
-    		positions[ vertexpos++ ] = this.positions[ j * 3 + 2 ];
-    			colors[ colorpos++ ] = alpha;
-    		colors[ colorpos++ ] = alpha;
-    		colors[ colorpos++ ] = alpha;
-    			colors[ colorpos++ ] = alpha;
-    		colors[ colorpos++ ] = alpha;
-    		colors[ colorpos++ ] = alpha;
-    			numConnected++;
-    	}
-    }
-    */
+				this.colors[b + 0] = color;
+				this.colors[b + 1] = color;
+				this.colors[b + 2] = color;
 			}
 
 			this.points.geometry.attributes.position.needsUpdate = true;

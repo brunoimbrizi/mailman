@@ -11,11 +11,16 @@ export default class AppUI {
 		
 		this.range = [0, 1];
 		this.rangeThreshold = [0, 2];
+		this.rangeZ = [-100, 100];
 
 		this.barsVisible = this.view.two.bars.visible;
 		this.trailVisible = this.view.two.trail.visible;
 
 		this.threeVisible = this.view.three.visible;
+
+		this.cloudZa = 50;
+		this.cloudZb = this.cloudZa;
+		this.cloudHills = false;
 
 		this.initControlKit();
 	}
@@ -50,6 +55,10 @@ export default class AppUI {
 
 		.addGroup({label: 'Three'})
 		.addCheckbox(this, 'threeVisible', { onChange: () => { that.onThreeChange(); } })
+
+		.addGroup({label: 'VideoCloud'})
+		.addSlider(this, 'cloudZa', 'rangeZ', { onChange: () => { that.onCloudChange(); } })
+		.addSlider(this, 'cloudZb', 'rangeZ', { onChange: () => { that.onCloudChange(); } })
 	}
 
 	onAudioChange(index) {
@@ -67,5 +76,10 @@ export default class AppUI {
 
 	onThreeChange() {
 		this.view.three.visible = this.threeVisible;
+	}
+
+	onCloudChange() {
+		this.view.three.videoCloud.cloudZa = this.cloudZa;
+		this.view.three.videoCloud.cloudZb = this.cloudZb;
 	}
 }

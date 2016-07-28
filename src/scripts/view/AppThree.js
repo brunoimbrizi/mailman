@@ -24,7 +24,7 @@ export default class AppThree {
 
 		// camera
 		this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
-		this.camera.position.z = 300;
+		this.camera.position.z = 480;
 	}
 
 	initControls() {
