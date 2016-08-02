@@ -2,10 +2,19 @@ body {
 	margin: 0;
 	overflow: hidden;
 	background-color: #222;
+	color: #ccc;
+	font-family: sans-serif;
 }
 
 #container2D, #container3D {
 	position: absolute;
 	top: 0;
 	left: 0;
+}
+
+#status {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 }

@@ -12,8 +12,15 @@ export default class AppView {
 		this.data = app.data;
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
+		app.on(AppAudio.AUDIO_LOAD, this.onAudioLoad.bind(this));
+		app.on(AppAudio.AUDIO_DECODE, this.onAudioDecode.bind(this));
 		app.on(AppAudio.AUDIO_PLAY, this.onAudioPlay.bind(this));
 		app.on(AppAudio.AUDIO_PAUSE, this.onAudioPause.bind(this));
+
+		app.on(VideoPlayer.VIDEO_CANPLAY, this.onVideoCanPlay.bind(this));
+
+		// TEMP
+		document.querySelector('#status').innerText = 'loading audio';
 
 		this.initSketch();
 	}
@@ -93,6 +100,40 @@ export default class AppView {
 		this.ui = new AppUI(this, this.audio);
 	}
 
+	// ---------------------------------------------------------------------------------------------
+	// PUBLIC
+	// ---------------------------------------------------------------------------------------------
+
+	show() {
+		// console.log('AppView.show', this.audioReady, this.videoReady);
+		if (!this.audioReady) return;
+		if (!this.videoReady) return;
+
+		// start audio (which starts video)
+		this.audio.play();
+
+		// TEMP
+		document.querySelector('#status').innerText = '';
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// EVENT HANDLERS
+	// ---------------------------------------------------------------------------------------------
+
+	onAudioLoad(e) {
+		// console.log('AppView.onAudioLoad', e);
+
+		// TEMP
+		document.querySelector('#status').innerText = 'decoding audio';
+	}
+
+	onAudioDecode(e) {
+		// console.log('AppView.onAudioDecode', e);
+		// this.video.play(e.currentTime);
+		this.audioReady = true;
+		this.show();
+	}
+
 	onAudioPlay(e) {
 		// console.log('AppView.onAudioPlay', e);
 		this.video.play(e.currentTime);
@@ -101,5 +142,11 @@ export default class AppView {
 	onAudioPause(e) {
 		// console.log('AppView.onAudioPause', e);
 		this.video.pause();
+	}
+
+	onVideoCanPlay(e) {
+		console.log('AppView.onVideoCanPlay', e);
+		this.videoReady = true;
+		this.show();
 	}
 }

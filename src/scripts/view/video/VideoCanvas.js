@@ -13,6 +13,7 @@ export default class VideoCanvas {
 
 	initCanvas() {
 		this.canvas = document.createElement('canvas');
+		this.canvas.id = 'videoCanvas';
 		this.canvas.width = this.videoPlayer.videoWidth;
 		this.canvas.height = this.videoPlayer.videoHeight;
 
@@ -20,6 +21,7 @@ export default class VideoCanvas {
 
 		// TEMP: append
 		document.querySelector('body').appendChild(this.canvas);
+		this.canvas.style.display = 'none';
 	}
 
 	update() {

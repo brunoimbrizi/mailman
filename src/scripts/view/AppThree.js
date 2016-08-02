@@ -1,4 +1,5 @@
 import Grid from './grid/Grid';
+import BlocksA from './blocks/BlocksA';
 import VideoCloud from './video/VideoCloud';
 
 export default class AppThree {
@@ -15,6 +16,7 @@ export default class AppThree {
 		this.initLights();
 		// this.initObject();
 		this.initGrid();
+		this.initBlocks();
 		this.initVideoCloud();
 	}
 
@@ -44,7 +46,7 @@ export default class AppThree {
 	initLights() {
 		this.directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
 		this.directionalLight.position.set(1, 1, 1);
-		this.scene.add(this.directionalLight);
+		// this.scene.add(this.directionalLight);
 
 		this.pointLight = new THREE.PointLight(0xFFFFFF, 1);
 		this.pointLight.position.set(0, 50, 100);
@@ -64,6 +66,11 @@ export default class AppThree {
 		// this.scene.add(this.grid.container);
 	}
 
+	initBlocks() {
+		this.blocksA = new BlocksA();
+		this.scene.add(this.blocksA.container);
+	}
+
 	initVideoCloud() {
 		this.videoCloud = new VideoCloud(this.view.video);
 		this.scene.add(this.videoCloud.container);
@@ -78,6 +85,7 @@ export default class AppThree {
 
 		this.controls.update();
 		// this.grid.update(this.audio.values);
+		this.blocksA.update(this.audio.values);
 		this.videoCloud.update();
 	}
 

@@ -3,6 +3,8 @@ export default class AppAudio {
 	get FFT_SIZE() { return 512; }
 	get BINS() { return 128; }
 
+	static get AUDIO_LOAD() { return 'audio-load'; }
+	static get AUDIO_DECODE() { return 'audio-decode'; }
 	static get AUDIO_PLAY() { return 'audio-play'; }
 	static get AUDIO_PAUSE() { return 'audio-pause'; }
 	static get AUDIO_END() { return 'audio-end'; }
@@ -147,6 +149,8 @@ export default class AppAudio {
 		// if (app.view.ui) app.view.ui.loader.onLoadComplete(e);
 
 		this.ctx.decodeAudioData(e.target.response, this.onBufferLoaded.bind(this), this.onBufferError.bind(this));
+
+		this.app.trigger(AppAudio.AUDIO_LOAD);
 	}
 
 	onBufferLoaded(buffer) {
@@ -158,7 +162,9 @@ export default class AppAudio {
 		this.loaded = true;
 		this.duration = this.buffer.duration * 1000;
 		// this.duration = this.buffer.duration * 1000 * this.playbackRate;
-		this.play();
+		// this.play();
+
+		this.app.trigger(AppAudio.AUDIO_DECODE);
 	}
 
 	onBufferError(e) {

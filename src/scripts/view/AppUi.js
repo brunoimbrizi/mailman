@@ -16,11 +16,12 @@ export default class AppUI {
 		this.barsVisible = this.view.two.bars.visible;
 		this.trailVisible = this.view.two.trail.visible;
 
+		this.freeCamera = true;
 		this.threeVisible = this.view.three.visible;
 
 		this.cloudZa = 50;
 		this.cloudZb = this.cloudZa;
-		this.cloudHills = false;
+		this.showVideoCanvas = false;
 
 		this.initControlKit();
 	}
@@ -43,22 +44,24 @@ export default class AppUI {
 
 		this.controlKit.addPanel({ width: 300 })
 
-		.addGroup({label: 'Audio'})
+		.addGroup({label: 'Audio', enable: false })
 		.addSlider(this, 'smoothing', 'range', { onChange: () => { that.onAudioChange(); } })
 		.addSlider(this, 'threshold', 'rangeThreshold', { onChange: () => { that.onAudioChange(); } })
 		.addSlider(this, 'kickThreshold', 'range', { onChange: () => { that.onAudioChange(); } })
 		.addSlider(this, 'volume', 'range', { onChange: () => { that.onAudioChange(); } })
 
-		.addGroup({label: 'Two'})
+		.addGroup({label: 'Two', enable: false })
 		.addCheckbox(this, 'barsVisible', { onChange: () => { that.onTwoChange(); } })
 		.addCheckbox(this, 'trailVisible', { onChange: () => { that.onTwoChange(); } })
 
-		.addGroup({label: 'Three'})
+		.addGroup({label: 'Three', enable: false })
 		.addCheckbox(this, 'threeVisible', { onChange: () => { that.onThreeChange(); } })
+		.addCheckbox(this, 'freeCamera', { onChange: () => { that.onThreeChange(); } })
 
 		.addGroup({label: 'VideoCloud'})
 		.addSlider(this, 'cloudZa', 'rangeZ', { onChange: () => { that.onCloudChange(); } })
 		.addSlider(this, 'cloudZb', 'rangeZ', { onChange: () => { that.onCloudChange(); } })
+		.addCheckbox(this, 'showVideoCanvas', { onChange: () => { that.onCloudChange(); } })
 	}
 
 	onAudioChange(index) {
@@ -81,5 +84,8 @@ export default class AppUI {
 	onCloudChange() {
 		this.view.three.videoCloud.cloudZa = this.cloudZa;
 		this.view.three.videoCloud.cloudZb = this.cloudZb;
+
+		const display = (this.showVideoCanvas) ? '' : 'none';
+		document.querySelector('#videoCanvas').style.display = display;
 	}
 }

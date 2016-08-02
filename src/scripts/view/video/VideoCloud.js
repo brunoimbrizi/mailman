@@ -44,13 +44,14 @@ export default class VideoCloud {
 		// const colors = new Float32Array( segments * 3 );
 
 		const material = new THREE.MeshBasicMaterial({
+		// const material = new THREE.PointsMaterial({
 			vertexColors: THREE.VertexColors,
-			// color: 0xFFFFFF,
-			size: 3,
+			// color: 0x666666,
+			// size: 3,
 			blending: THREE.AdditiveBlending,
-			side: THREE.DoubleSide
+			side: THREE.DoubleSide,
 			// transparent: true,
-			// sizeAttenuation: false
+			// sizeAttenuation: false,
 			// wireframe: true
 		});
 
@@ -160,7 +161,8 @@ export default class VideoCloud {
 			this.positions[a + 2] = this.anchors[a + 2] + grey * this.cloudZa;
 			this.positions[b + 2] = this.anchors[a + 2] + grey * this.cloudZb;
 
-			const color = (grey > 0.2) ? 1 : 0;
+			// either #666 or #222
+			const color = (grey > 0.2) ? 0.4 : 0.1333;
 
 			this.colors[a + 0] = color;
 			this.colors[a + 1] = color;

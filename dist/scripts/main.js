@@ -130,6 +130,16 @@ var AppAudio = function () {
 			return 128;
 		}
 	}], [{
+		key: 'AUDIO_LOAD',
+		get: function get() {
+			return 'audio-load';
+		}
+	}, {
+		key: 'AUDIO_DECODE',
+		get: function get() {
+			return 'audio-decode';
+		}
+	}, {
 		key: 'AUDIO_PLAY',
 		get: function get() {
 			return 'audio-play';
@@ -305,6 +315,8 @@ var AppAudio = function () {
 			// if (app.view.ui) app.view.ui.loader.onLoadComplete(e);
 
 			this.ctx.decodeAudioData(e.target.response, this.onBufferLoaded.bind(this), this.onBufferError.bind(this));
+
+			this.app.trigger(AppAudio.AUDIO_LOAD);
 		}
 	}, {
 		key: 'onBufferLoaded',
@@ -317,7 +329,9 @@ var AppAudio = function () {
 			this.loaded = true;
 			this.duration = this.buffer.duration * 1000;
 			// this.duration = this.buffer.duration * 1000 * this.playbackRate;
-			this.play();
+			// this.play();
+
+			this.app.trigger(AppAudio.AUDIO_DECODE);
 		}
 	}, {
 		key: 'onBufferError',
@@ -535,6 +549,10 @@ var _Grid = require('./grid/Grid');
 
 var _Grid2 = _interopRequireDefault(_Grid);
 
+var _BlocksA = require('./blocks/BlocksA');
+
+var _BlocksA2 = _interopRequireDefault(_BlocksA);
+
 var _VideoCloud = require('./video/VideoCloud');
 
 var _VideoCloud2 = _interopRequireDefault(_VideoCloud);
@@ -558,6 +576,7 @@ var AppThree = function () {
 		this.initLights();
 		// this.initObject();
 		this.initGrid();
+		this.initBlocks();
 		this.initVideoCloud();
 	}
 
@@ -591,7 +610,7 @@ var AppThree = function () {
 		value: function initLights() {
 			this.directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
 			this.directionalLight.position.set(1, 1, 1);
-			this.scene.add(this.directionalLight);
+			// this.scene.add(this.directionalLight);
 
 			this.pointLight = new THREE.PointLight(0xFFFFFF, 1);
 			this.pointLight.position.set(0, 50, 100);
@@ -613,6 +632,12 @@ var AppThree = function () {
 			// this.scene.add(this.grid.container);
 		}
 	}, {
+		key: 'initBlocks',
+		value: function initBlocks() {
+			this.blocksA = new _BlocksA2.default();
+			this.scene.add(this.blocksA.container);
+		}
+	}, {
 		key: 'initVideoCloud',
 		value: function initVideoCloud() {
 			this.videoCloud = new _VideoCloud2.default(this.view.video);
@@ -630,6 +655,7 @@ var AppThree = function () {
 
 			this.controls.update();
 			// this.grid.update(this.audio.values);
+			this.blocksA.update(this.audio.values);
 			this.videoCloud.update();
 		}
 	}, {
@@ -666,7 +692,7 @@ var AppThree = function () {
 
 exports.default = AppThree;
 
-},{"./grid/Grid":12,"./video/VideoCloud":16}],8:[function(require,module,exports){
+},{"./blocks/BlocksA":12,"./grid/Grid":13,"./video/VideoCloud":17}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -753,7 +779,7 @@ var AppTwo = function () {
 
 exports.default = AppTwo;
 
-},{"./bars/AudioBars":11,"./lyrics/SimpleLyrics":13,"./trail/AudioTrail":14}],9:[function(require,module,exports){
+},{"./bars/AudioBars":11,"./lyrics/SimpleLyrics":14,"./trail/AudioTrail":15}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -783,11 +809,12 @@ var AppUI = function () {
 		this.barsVisible = this.view.two.bars.visible;
 		this.trailVisible = this.view.two.trail.visible;
 
+		this.freeCamera = true;
 		this.threeVisible = this.view.three.visible;
 
 		this.cloudZa = 50;
 		this.cloudZb = this.cloudZa;
-		this.cloudHills = false;
+		this.showVideoCanvas = false;
 
 		this.initControlKit();
 	}
@@ -810,7 +837,7 @@ var AppUI = function () {
    // } }	);
    */
 
-			this.controlKit.addPanel({ width: 300 }).addGroup({ label: 'Audio' }).addSlider(this, 'smoothing', 'range', { onChange: function onChange() {
+			this.controlKit.addPanel({ width: 300 }).addGroup({ label: 'Audio', enable: false }).addSlider(this, 'smoothing', 'range', { onChange: function onChange() {
 					that.onAudioChange();
 				} }).addSlider(this, 'threshold', 'rangeThreshold', { onChange: function onChange() {
 					that.onAudioChange();
@@ -818,15 +845,19 @@ var AppUI = function () {
 					that.onAudioChange();
 				} }).addSlider(this, 'volume', 'range', { onChange: function onChange() {
 					that.onAudioChange();
-				} }).addGroup({ label: 'Two' }).addCheckbox(this, 'barsVisible', { onChange: function onChange() {
+				} }).addGroup({ label: 'Two', enable: false }).addCheckbox(this, 'barsVisible', { onChange: function onChange() {
 					that.onTwoChange();
 				} }).addCheckbox(this, 'trailVisible', { onChange: function onChange() {
 					that.onTwoChange();
-				} }).addGroup({ label: 'Three' }).addCheckbox(this, 'threeVisible', { onChange: function onChange() {
+				} }).addGroup({ label: 'Three', enable: false }).addCheckbox(this, 'threeVisible', { onChange: function onChange() {
+					that.onThreeChange();
+				} }).addCheckbox(this, 'freeCamera', { onChange: function onChange() {
 					that.onThreeChange();
 				} }).addGroup({ label: 'VideoCloud' }).addSlider(this, 'cloudZa', 'rangeZ', { onChange: function onChange() {
 					that.onCloudChange();
 				} }).addSlider(this, 'cloudZb', 'rangeZ', { onChange: function onChange() {
+					that.onCloudChange();
+				} }).addCheckbox(this, 'showVideoCanvas', { onChange: function onChange() {
 					that.onCloudChange();
 				} });
 		}
@@ -855,6 +886,9 @@ var AppUI = function () {
 		value: function onCloudChange() {
 			this.view.three.videoCloud.cloudZa = this.cloudZa;
 			this.view.three.videoCloud.cloudZb = this.cloudZb;
+
+			var display = this.showVideoCanvas ? '' : 'none';
+			document.querySelector('#videoCanvas').style.display = display;
 		}
 	}]);
 
@@ -908,8 +942,15 @@ var AppView = function () {
 		this.data = app.data;
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
+		app.on(_AppAudio2.default.AUDIO_LOAD, this.onAudioLoad.bind(this));
+		app.on(_AppAudio2.default.AUDIO_DECODE, this.onAudioDecode.bind(this));
 		app.on(_AppAudio2.default.AUDIO_PLAY, this.onAudioPlay.bind(this));
 		app.on(_AppAudio2.default.AUDIO_PAUSE, this.onAudioPause.bind(this));
+
+		app.on(_VideoPlayer2.default.VIDEO_CANPLAY, this.onVideoCanPlay.bind(this));
+
+		// TEMP
+		document.querySelector('#status').innerText = 'loading audio';
 
 		this.initSketch();
 	}
@@ -993,6 +1034,45 @@ var AppView = function () {
 		value: function initUI() {
 			this.ui = new _AppUI2.default(this, this.audio);
 		}
+
+		// ---------------------------------------------------------------------------------------------
+		// PUBLIC
+		// ---------------------------------------------------------------------------------------------
+
+	}, {
+		key: 'show',
+		value: function show() {
+			// console.log('AppView.show', this.audioReady, this.videoReady);
+			if (!this.audioReady) return;
+			if (!this.videoReady) return;
+
+			// start audio (which starts video)
+			this.audio.play();
+
+			// TEMP
+			document.querySelector('#status').innerText = '';
+		}
+
+		// ---------------------------------------------------------------------------------------------
+		// EVENT HANDLERS
+		// ---------------------------------------------------------------------------------------------
+
+	}, {
+		key: 'onAudioLoad',
+		value: function onAudioLoad(e) {
+			// console.log('AppView.onAudioLoad', e);
+
+			// TEMP
+			document.querySelector('#status').innerText = 'decoding audio';
+		}
+	}, {
+		key: 'onAudioDecode',
+		value: function onAudioDecode(e) {
+			// console.log('AppView.onAudioDecode', e);
+			// this.video.play(e.currentTime);
+			this.audioReady = true;
+			this.show();
+		}
 	}, {
 		key: 'onAudioPlay',
 		value: function onAudioPlay(e) {
@@ -1005,6 +1085,13 @@ var AppView = function () {
 			// console.log('AppView.onAudioPause', e);
 			this.video.pause();
 		}
+	}, {
+		key: 'onVideoCanPlay',
+		value: function onVideoCanPlay(e) {
+			console.log('AppView.onVideoCanPlay', e);
+			this.videoReady = true;
+			this.show();
+		}
 	}]);
 
 	return AppView;
@@ -1012,7 +1099,7 @@ var AppView = function () {
 
 exports.default = AppView;
 
-},{"../audio/AppAudio":2,"./AppThree":7,"./AppTwo":8,"./AppUI":9,"./video/VideoCanvas":15,"./video/VideoPlayer":17}],11:[function(require,module,exports){
+},{"../audio/AppAudio":2,"./AppThree":7,"./AppTwo":8,"./AppUI":9,"./video/VideoCanvas":16,"./video/VideoPlayer":18}],11:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1076,6 +1163,93 @@ var AudioBars = function () {
 exports.default = AudioBars;
 
 },{}],12:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _MathUtils = require('../../utils/MathUtils');
+
+var _MathUtils2 = _interopRequireDefault(_MathUtils);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BlocksA = function () {
+	function BlocksA() {
+		_classCallCheck(this, BlocksA);
+
+		this.cols = 6;
+		this.rows = 4;
+
+		this.width = 360;
+		this.height = 80;
+
+		this.container = new THREE.Object3D();
+
+		this.initBlocks();
+	}
+
+	_createClass(BlocksA, [{
+		key: 'initBlocks',
+		value: function initBlocks() {
+			var w = this.width / (this.cols - 1);
+			var h = this.height / (this.rows - 1);
+
+			// const geometry = new THREE.BoxBufferGeometry(2, 2, 2);
+			var geometry = new THREE.PlaneBufferGeometry(2, 2);
+			// const material = new THREE.MeshPhongMaterial({ color: 0xffffff, shading: THREE.FlatShading });
+			var material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+			for (var i = 0; i < this.rows * this.cols; i++) {
+				var col = i % this.cols;
+				var row = floor(i / this.cols);
+
+				var x = w * col - this.width * 0.5;
+				var y = h * row * -1 + this.height * 0.5;
+
+				var mesh = new THREE.Mesh(geometry, material);
+				mesh.position.x = x;
+				mesh.position.y = y;
+				// mesh.rotation.x = HALF_PI;
+				// mesh.rotation.z = i * PI * 0.01;
+				this.container.add(mesh);
+
+				mesh.index = floor(random(24, 48));
+			}
+		}
+	}, {
+		key: 'update',
+		value: function update(values) {
+			// return;
+			var length = this.container.children.length;
+			// const slice = values.slice(30, 30 + this.cols);
+
+			for (var i = 0; i < length; i++) {
+				// const v = MathUtils.map(i, 0, length, 0, slice.length - 1, true);
+				// const v = MathUtils.map(i, 0, length, 0, values.length - 1, true);
+				var item = this.container.children[i];
+				var v = item.index;
+				if (!values[v]) continue;
+				item.scale.x = values[v] * values[v] * 20;
+				item.scale.y = values[v] * values[v];
+				// item.scale.z = values[v] * 20;
+				item.position.z = values[v] * 50 + 100;
+				// item.rotation.y = values[v];
+			}
+		}
+	}]);
+
+	return BlocksA;
+}();
+
+exports.default = BlocksA;
+
+},{"../../utils/MathUtils":5}],13:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1160,7 +1334,7 @@ var Grid = function () {
 
 exports.default = Grid;
 
-},{"../../utils/MathUtils":5}],13:[function(require,module,exports){
+},{"../../utils/MathUtils":5}],14:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1232,7 +1406,7 @@ var SimpleLyrics = function () {
 
 exports.default = SimpleLyrics;
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1309,7 +1483,7 @@ var AudioTrail = function () {
 
 exports.default = AudioTrail;
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1343,6 +1517,7 @@ var VideoCanvas = function () {
 		key: 'initCanvas',
 		value: function initCanvas() {
 			this.canvas = document.createElement('canvas');
+			this.canvas.id = 'videoCanvas';
 			this.canvas.width = this.videoPlayer.videoWidth;
 			this.canvas.height = this.videoPlayer.videoHeight;
 
@@ -1350,6 +1525,7 @@ var VideoCanvas = function () {
 
 			// TEMP: append
 			document.querySelector('body').appendChild(this.canvas);
+			this.canvas.style.display = 'none';
 		}
 	}, {
 		key: 'update',
@@ -1380,7 +1556,7 @@ var VideoCanvas = function () {
 
 exports.default = VideoCanvas;
 
-},{"./VideoPlayer":17}],16:[function(require,module,exports){
+},{"./VideoPlayer":18}],17:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1436,16 +1612,17 @@ var VideoCloud = function () {
 			// const colors = new Float32Array( segments * 3 );
 
 			var material = new THREE.MeshBasicMaterial({
+				// const material = new THREE.PointsMaterial({
 				vertexColors: THREE.VertexColors,
-				// color: 0xFFFFFF,
-				size: 3,
+				// color: 0x666666,
+				// size: 3,
 				blending: THREE.AdditiveBlending,
 				side: THREE.DoubleSide
-				// transparent: true,
-				// sizeAttenuation: false
-				// wireframe: true
 			});
 
+			// transparent: true,
+			// sizeAttenuation: false,
+			// wireframe: true
 			var geometry = new THREE.BufferGeometry();
 			var positions = new Float32Array(maxParticleCount * 3 * 2); // twice as many rows
 			var anchors = new Float32Array(maxParticleCount * 3);
@@ -1553,7 +1730,8 @@ var VideoCloud = function () {
 				this.positions[a + 2] = this.anchors[a + 2] + grey * this.cloudZa;
 				this.positions[b + 2] = this.anchors[a + 2] + grey * this.cloudZb;
 
-				var color = grey > 0.2 ? 1 : 0;
+				// either #666 or #222
+				var color = grey > 0.2 ? 0.4 : 0.1333;
 
 				this.colors[a + 0] = color;
 				this.colors[a + 1] = color;
@@ -1574,7 +1752,7 @@ var VideoCloud = function () {
 
 exports.default = VideoCloud;
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1586,8 +1764,17 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var VideoPlayer = function () {
+	_createClass(VideoPlayer, null, [{
+		key: 'VIDEO_CANPLAY',
+		get: function get() {
+			return 'video-canplay';
+		}
+	}]);
+
 	function VideoPlayer() {
 		_classCallCheck(this, VideoPlayer);
+
+		this.app = app;
 
 		// get video from DOM
 		this.video = document.querySelector('video');
@@ -1604,13 +1791,12 @@ var VideoPlayer = function () {
 		this.videoWidth = this.video.width;
 		this.videoHeight = this.video.height;
 
-		// fixed video dimensions
-		// this.videoWidth = 256;
-		// this.videoHeight = 168;
-
 		// clear width and height attributes from video tag
 		this.video.removeAttribute('width');
 		this.video.removeAttribute('height');
+
+		this.handlerCanPlay = this.onCanPlay.bind(this);
+		this.video.addEventListener('canplay', this.handlerCanPlay);
 
 		this.resize();
 	}
@@ -1660,6 +1846,14 @@ var VideoPlayer = function () {
 			// center
 			this.video.style.marginLeft = marginw + 'px';
 			this.video.style.marginTop = marginh + 'px';
+		}
+	}, {
+		key: 'onCanPlay',
+		value: function onCanPlay(e) {
+			this.app.trigger(VideoPlayer.VIDEO_CANPLAY, e);
+
+			// just once
+			this.video.removeEventListener('canplay', this.handlerCanPlay);
 		}
 	}]);
 
