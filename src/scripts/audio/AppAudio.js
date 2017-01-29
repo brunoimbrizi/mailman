@@ -1,7 +1,9 @@
-export default class AppAudio {
+import EventEmitter from 'events';
+require('visibly.js');
 
-	get FFT_SIZE() { return 512; }
-	get BINS() { return 128; }
+export default class AppAudio extends EventEmitter {
+
+	get FFT_SIZE() { return 1024; }
 
 	static get AUDIO_LOAD() { return 'audio-load'; }
 	static get AUDIO_DECODE() { return 'audio-decode'; }
@@ -10,84 +12,107 @@ export default class AppAudio {
 	static get AUDIO_END() { return 'audio-end'; }
 	static get AUDIO_RESTART() { return 'audio-restart'; }
 
-	constructor(app) {
-		this.app = app;
-		this.pausedAt = 0;
+	constructor() {
+		super();
 
-		this.initContext();
+		// check initial state of the AudioContext
+		createjs.Sound.initializeDefaultPlugins();
+		createjs.Sound.alternateExtensions = ['mp3'];
+
 		this.initGain();
 		this.initAnalyser();
 
-		this.load('audio/04 - Soundgarden - Mailman.mp3');
-	}
+		this.play('track');
 
-	initContext() {
-		if (window.AudioContext === void 0) window.AudioContext = window.webkitAudioContext;
-		this.ctx = new AudioContext();
+		if (createjs.Sound.activePlugin.context.state === 'suspended') {
+			this.muted = true;
+		}
+
+		createjs.Sound.activePlugin.context.onstatechange = () => {
+			if (createjs.Sound.activePlugin.context.state === 'running') {
+				this.unmute();
+			}
+		};
+
+		// pause/resume with page visibility
+		visibly.onHidden(() => {
+			this.wasMuted = this.muted;
+			this.mute();
+		});
+
+		visibly.onVisible(() => {
+			if (!this.wasMuted) this.unmute();
+		});
 	}
 
 	initGain() {
-		this.gainNode = this.ctx.createGain();
+		const context = createjs.Sound.activePlugin.context;
+
+		this.gainNode = context.createGain();
 		this.gainNode.gain.value = 0.0;
-		this.gainNode.connect(this.ctx.destination);
+		this.gainNode.connect(context.destination);
 	}
 
 	initAnalyser() {
-		this.values = [];
-		// this.selectedIndices = [42, 38, 28, 48, 32, 34, 40, 30, 24, 44, 26, 36];
-		this.selectedIndices = [20, 30, 40, 50, 60, 70, 75, 80, 85, 90];
-		this.selectedValues = [];
-		this.oldValues = [];
+		const context = createjs.Sound.activePlugin.context;
 
-		this.threshold = 1.0;
-		this.kickThreshold = 0.1;
-
-		this.analyserNode = this.ctx.createAnalyser();
-		this.analyserNode.smoothingTimeConstant = 0.9;
+		// create an analyser node
+		this.analyserNode = context.createAnalyser();
 		this.analyserNode.fftSize = this.FFT_SIZE;
+		this.analyserNode.smoothingTimeConstant = 0.85;
 		this.analyserNode.connect(this.gainNode);
-		// this.analyserNode.connect(this.ctx.destination); // comment out to start mute
+
+		this.levelsCount = 32;
+		this.levelsData = [];
+
+		this.binCount = this.analyserNode.frequencyBinCount; // FFT_SIZE / 2 
+		this.binsPerLevel = Math.floor(this.binCount / this.levelsCount);
+
+		this.freqByteData = new Uint8Array(this.binCount);
+
+		this.peakCutOff = 0.35;
+		this.peakLast = 0;
+		this.peakDecay = 0.99;
+		this.peakInterval = 30; // frames
+		this.peakElapsed = 0;
+		this.peakDetectIndex = 10; // average = -1
+
+		// attach visualizer node to our existing dynamicsCompressorNode, which was connected to context.destination
+		const dynamicsNode = createjs.Sound.activePlugin.dynamicsCompressorNode;
+		dynamicsNode.disconnect();  // disconnect from destination
+		dynamicsNode.connect(this.analyserNode);
 	}
 
 	// ---------------------------------------------------------------------------------------------
 	// PUBLIC
 	// ---------------------------------------------------------------------------------------------
 
-	load(url) {
-		const request = new XMLHttpRequest();
-		request.open('GET', url, true);
-		request.responseType = 'arraybuffer';
-		request.onprogress = this.onRequestProgress.bind(this);
-		request.onload = this.onRequestLoad.bind(this);
-		request.send();
-	}
-
-	play() {
+	play(name) {
 		// if (this.ended) window.dispatchEvent(new Event(this.EVENT_AUDIO_RESTARTED));
 
-		this.sourceNode = this.ctx.createBufferSource();
-		this.sourceNode.onended = this.onSourceEnded;
-		this.sourceNode.connect(this.analyserNode);
-		// this.sourceNode.playbackRate.value = this.playbackRate;
-		this.sourceNode.buffer = this.buffer;
-		this.ended = false;
-		this.paused = false;
+		if (!this.player) {
+			this.player = createjs.Sound.play(name);
+			this.player.pausedAt = 0;
+		}
 
-		this.startedAt = Date.now() - this.pausedAt;
-		this.sourceNode.start(0, this.pausedAt / 1000);
+		this.player.ended = false;
+		this.player.paused = false;
 
-		this.app.trigger(AppAudio.AUDIO_PLAY, { currentTime: this.pausedAt });
+		this.player.startedAt = Date.now() - this.player.pausedAt;
+		// this.sourceNode.start(0, this.pausedAt / 1000);
+
+		this.emit(AppAudio.AUDIO_PLAY, { currentTime: this.player.pausedAt });
 	}
 
 	pause() {
-		this.sourceNode.stop(0);
-		this.pausedAt = Date.now() - this.startedAt;
-		this.paused = true;
+		this.player.pausedAt = Date.now() - this.player.startedAt;
+		this.player.paused = true;
 
-		this.app.trigger(AppAudio.AUDIO_PAUSE, { currentTime: this.pausedAt });
+		this.emit(AppAudio.AUDIO_PAUSE, { currentTime: this.player.pausedAt });
 	}
 
 	seek(time) {
+		/*
 		if (time == undefined) return;
 		if (time > this.buffer.duration) return;
 
@@ -99,39 +124,76 @@ export default class AppAudio {
 		}
 		this.pausedAt = time * 1000;
 		if (!this.paused) this.play();
+		*/
+	}
+
+	mute() {
+		this.pause();
+		this.muted = true;
+	}
+
+	unmute() {
+		if (this.player.paused) this.play();
+		this.muted = false;
 	}
 
 	update() {
-		const freqData = new Uint8Array(this.analyserNode.frequencyBinCount);
-		this.analyserNode.getByteFrequencyData(freqData);
-		const length = freqData.length;
+		if (this.player.paused) return;
 
-		this.oldValues = this.values.concat();
-
-		const bin = Math.ceil(length / this.BINS);
-		for (let i = 0; i < this.BINS; i++) {
-			let sum = 0;
-			for (let j = 0; j < bin; j++) {
-				sum += freqData[(i * bin) + j];
-			}
-
-			// Calculate the average frequency of the samples in the bin
-			const average = sum / bin;
-
-			// Divide by number of bins to normalize
-			// this.values[i] = (average / this.BINS) / this.playbackRate;
-			this.values[i] = (average / this.BINS);
-		}
-
-		for (let i = 0; i < this.selectedIndices.length; i++) {
-			const index = this.selectedIndices[i]
-			this.selectedValues[i] = this.values[index];
-		}
+		this.updateFrequencyData();
+		this.detectPeak(this.peakDetectIndex);
 
 		// set current time
-		if (this.loaded && !this.ended) {
-			this.currentTime = (this.paused) ? this.pausedAt : Date.now() - this.startedAt;
+		if (this.player && !this.player.ended) {
+			this.player.currentTime = (this.player.paused) ? this.player.pausedAt : Date.now() - this.player.startedAt;
 			// this.currentTime *= this.playbackRate;
+		}
+	}
+
+	updateFrequencyData() {
+		this.analyserNode.getByteFrequencyData(this.freqByteData);
+
+		// normalize
+		for (let i = 0; i < this.levelsCount; i++) {
+			let sum = 0;
+			for (let j = 0; j < this.binsPerLevel; j++) {
+				sum += this.freqByteData[(i * this.binsPerLevel) + j];
+			}
+
+			// freqByteData values go from 0 to 256
+			this.levelsData[i] = sum / this.binsPerLevel / 256;
+		}
+
+		// average level
+		let sum = 0;
+		for(let i = 0; i < this.levelsCount; i++) {
+			sum += this.levelsData[i];
+		}
+
+		this.avgLevel = sum / this.levelsCount;
+	}
+
+	detectPeak(index) {
+		// default is average
+		let value = this.avgLevel;
+		// but it can be any level
+		if (index > 0 && index < this.levelsCount) {
+			value = this.levelsData[index];
+		}
+
+		// ignore if last peak happened before the min interval
+		if (this.peakElapsed < this.peakInterval) {
+			this.peakElapsed++;
+			return;
+		}
+
+		// new peak
+		if (value > this.peakLast && value > this.peakCutOff) {
+			this.onPeak();
+			this.peakLast = value * 1.2;
+			this.peakElapsed = 0;
+		} else {
+			this.peakLast *= this.peakDecay;
 		}
 	}
 
@@ -139,6 +201,11 @@ export default class AppAudio {
 	// EVENT HANDLERS
 	// ---------------------------------------------------------------------------------------------
 
+	onPeak() {
+		this.emit(AppAudio.AUDIO_PEAK);
+	}
+
+	/*
 	onRequestProgress(e) {
 		// console.log('AppAudio.onRequestProgress', e, app.view.ui)
 		// if (app.view.ui) app.view.ui.loader.onLoadProgress(e);
@@ -150,7 +217,7 @@ export default class AppAudio {
 
 		this.ctx.decodeAudioData(e.target.response, this.onBufferLoaded.bind(this), this.onBufferError.bind(this));
 
-		this.app.trigger(AppAudio.AUDIO_LOAD);
+		this.emit(AppAudio.AUDIO_LOAD);
 	}
 
 	onBufferLoaded(buffer) {
@@ -164,7 +231,7 @@ export default class AppAudio {
 		// this.duration = this.buffer.duration * 1000 * this.playbackRate;
 		// this.play();
 
-		this.app.trigger(AppAudio.AUDIO_DECODE);
+		this.emit(AppAudio.AUDIO_DECODE);
 	}
 
 	onBufferError(e) {
@@ -182,5 +249,6 @@ export default class AppAudio {
 
 		// window.dispatchEvent(new Event(this.EVENT_AUDIO_ENDED));
 	}
+	*/
 
 }

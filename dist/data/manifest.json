@@ -1,0 +1,6 @@
+{
+	"manifest": [
+		{ "id": "markers", "src": "data/Markers.csv" },
+		{ "id": "track", "src": "audio/04-Soundgarden-Mailman.mp3" }
+	]
+}

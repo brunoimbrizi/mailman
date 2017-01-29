@@ -1,26 +1,16 @@
-import AppTwo from './AppTwo';
-import AppThree from './AppThree';
-import AppUI from './AppUI';
 import AppAudio from '../audio/AppAudio';
+
+import UIView from './ui/UIView';
+import WebGLView from './webgl/WebGLView';
 import VideoPlayer from './video/VideoPlayer';
-import VideoCanvas from './video/VideoCanvas';
+// import VideoCanvas from './video/VideoCanvas';
 
 export default class AppView {
 
-	constructor(app) {
+	constructor() {
 		this.audio = app.audio;
 		this.data = app.data;
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-
-		app.on(AppAudio.AUDIO_LOAD, this.onAudioLoad.bind(this));
-		app.on(AppAudio.AUDIO_DECODE, this.onAudioDecode.bind(this));
-		app.on(AppAudio.AUDIO_PLAY, this.onAudioPlay.bind(this));
-		app.on(AppAudio.AUDIO_PAUSE, this.onAudioPause.bind(this));
-
-		app.on(VideoPlayer.VIDEO_CANPLAY, this.onVideoCanPlay.bind(this));
-
-		// TEMP
-		document.querySelector('#status').innerText = 'loading audio';
 
 		this.initSketch();
 	}
@@ -36,30 +26,27 @@ export default class AppView {
 		});
 
 		this.sketch.setup = () => {
-			this.initVideo();
-			this.initTwo();
-			this.initThree();
+			// this.initVideo();
+			this.initWebGL();
 			this.initUI();
+
+			// this.addListeners();
 		};
 
 		this.sketch.update = () => {
 			this.audio.update();
-			this.two.update();
-			this.three.update();
-			this.video.update();
+			this.webgl.update();
+			// this.video.update();
 		};
 
 		this.sketch.draw = () => {
-			this.two.draw();
-			this.three.draw();
+			this.ui.draw();
+			this.webgl.draw();
 		};
 
 		this.sketch.resize = () => {
-			this.hw = this.sketch.width * 0.5;
-			this.hh = this.sketch.height * 0.5;
-
-			this.three.resize();
-			this.video.resize();
+			this.webgl.resize();
+			// this.video.resize();
 		};
 
 		this.sketch.touchstart = (e) => {
@@ -73,8 +60,14 @@ export default class AppView {
 		};
 
 		this.sketch.keyup = (e) => {
-			if (e.keyCode === 32) {
-				if (this.audio.paused) this.audio.play();
+			// console.log(e.keyCode);
+
+			if (e.keyCode == 68) { //d
+				this.ui.toggle();
+			}
+
+			if (e.keyCode === 32) { // space
+				if (this.audio.player.paused) this.audio.play();
 				else this.audio.pause();
 			}
 		};
@@ -84,20 +77,29 @@ export default class AppView {
 		this.two = new AppTwo(this, this.audio, this.data);
 	}
 
-	initThree() {
+	initWebGL() {
 		// transfer canvas to container3D
-		document.querySelector('#container3D').appendChild(this.renderer.domElement);
+		document.querySelector('#container').appendChild(this.renderer.domElement);
 
-		this.three = new AppThree(this, this.audio);
+		this.webgl = new WebGLView();
 	}
 
 	initVideo() {
-		// this.video = new VideoPlayer();
-		this.video = new VideoCanvas();
+		this.video = new VideoPlayer();
+		// this.video = new VideoCanvas();
 	}
 
 	initUI() {
-		this.ui = new AppUI(this, this.audio);
+		this.ui = new UIView();
+	}
+
+	addListeners() {
+		this.audio.on(AppAudio.AUDIO_LOAD, this.onAudioLoad.bind(this));
+		this.audio.on(AppAudio.AUDIO_DECODE, this.onAudioDecode.bind(this));
+		this.audio.on(AppAudio.AUDIO_PLAY, this.onAudioPlay.bind(this));
+		this.audio.on(AppAudio.AUDIO_PAUSE, this.onAudioPause.bind(this));
+
+		this.video.on(VideoPlayer.VIDEO_CANPLAY, this.onVideoCanPlay.bind(this));
 	}
 
 	// ---------------------------------------------------------------------------------------------

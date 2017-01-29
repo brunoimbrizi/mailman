@@ -1,9 +1,11 @@
-export default class VideoPlayer {
+import EventEmitter from 'events';
+
+export default class VideoPlayer extends EventEmitter {
 
 	static get VIDEO_CANPLAY() { return 'video-canplay'; }
 
 	constructor() {
-		this.app = app;
+		super();
 
 		// get video from DOM
 		this.video = document.querySelector('video');
@@ -74,7 +76,7 @@ export default class VideoPlayer {
 	}
 
 	onCanPlay(e) {
-		this.app.trigger(VideoPlayer.VIDEO_CANPLAY, e);
+		this.emit(VideoPlayer.VIDEO_CANPLAY, e);
 
 		// just once
 		this.video.removeEventListener('canplay', this.handlerCanPlay);

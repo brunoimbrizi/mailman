@@ -6,11 +6,32 @@ export default class App {
 
 	constructor(el) {
 		this.el = el;
-		this.listeners = {};
 
-		this.initData();
-		this.initAudio();
-		this.initView();
+		this.initLoader();
+	}
+
+	initLoader() {
+		this.preloader = new createjs.LoadQueue();
+		this.preloader.installPlugin(createjs.Sound);
+
+		this.preloader.addEventListener('progress', (e) => {
+			console.log('preloader', e);
+			const progress = Math.round(e.progress * 100);
+			document.querySelector('.info .content h2').innerHTML = `LOADING ${progress}`;
+		});
+
+		this.preloader.addEventListener('complete', (e) => {
+			console.log('preloader', e);
+			requestAnimationFrame(() => {
+				document.querySelector('.info').classList.add('hide');
+				
+				// this.initData();
+				this.initAudio();
+				this.initView();
+			});
+		});
+
+		this.preloader.loadManifest('data/manifest.json');
 	}
 
 	initData() {
@@ -18,36 +39,10 @@ export default class App {
 	}
 
 	initAudio() {
-		this.audio = new AppAudio(this);
+		this.audio = new AppAudio();
 	}
 
 	initView() {
-		this.view = new AppView(this);
-	}
-
-	on(type, cb) {
-		this.listeners[type] = this.listeners[type] || [];
-		if (this.listeners[type].indexOf(cb) === -1) {
-			this.listeners[type].push(cb);
-		}
-	}
-
-	off(type, cb) {
-		if (this.listeners[type]) {
-			if (cb) {
-				const index = this.listeners[type].indexOf(cb);
-				if (index !== -1) {
-					this.listeners[type].splice(index, 1);
-				}
-			} else this.listeners[type] = [];
-		}
-	}
-
-	trigger(type, args) {
-		if (this.listeners[type]) {
-			for (const cb of this.listeners[type]) {
-				cb(args);
-			}
-		}
+		this.view = new AppView();
 	}
 }
