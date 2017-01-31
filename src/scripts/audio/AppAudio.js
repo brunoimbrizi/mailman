@@ -4,6 +4,8 @@ require('visibly.js');
 export default class AppAudio extends EventEmitter {
 
 	get FFT_SIZE() { return 1024; }
+	get TYPE_LINEAR() { return 0; }
+	get TYPE_EXPONENTIAL() { return 1; }
 
 	static get AUDIO_LOAD() { return 'audio-load'; }
 	static get AUDIO_DECODE() { return 'audio-decode'; }
@@ -62,7 +64,13 @@ export default class AppAudio extends EventEmitter {
 		this.analyserNode.smoothingTimeConstant = 0.85;
 		this.analyserNode.connect(this.gainNode);
 
-		this.levelsCount = 32;
+		// attach visualizer node to our existing dynamicsCompressorNode, which was connected to context.destination
+		const dynamicsNode = createjs.Sound.activePlugin.dynamicsCompressorNode;
+		dynamicsNode.disconnect();  // disconnect from destination
+		dynamicsNode.connect(this.analyserNode);
+
+		this.levelsType = this.TYPE_LINEAR;
+		this.levelsCount = 16;
 		this.levelsData = [];
 
 		this.binCount = this.analyserNode.frequencyBinCount; // FFT_SIZE / 2 
@@ -70,17 +78,15 @@ export default class AppAudio extends EventEmitter {
 
 		this.freqByteData = new Uint8Array(this.binCount);
 
-		this.peakCutOff = 0.35;
+		this.peakCutOff = 0.25;
 		this.peakLast = 0;
 		this.peakDecay = 0.99;
 		this.peakInterval = 30; // frames
 		this.peakElapsed = 0;
-		this.peakDetectIndex = 10; // average = -1
+		this.peakDetectIndex = -1; // average = -1
 
-		// attach visualizer node to our existing dynamicsCompressorNode, which was connected to context.destination
-		const dynamicsNode = createjs.Sound.activePlugin.dynamicsCompressorNode;
-		dynamicsNode.disconnect();  // disconnect from destination
-		dynamicsNode.connect(this.analyserNode);
+		// this.sampleBands = [2, 4, 8, 16, 32, 64, 128, 256]; // 8
+		this.sampleBands = [1, 1, 2, 2, 2, 4, 4, 8, 8, 16, 16, 32, 32, 64, 64, 128, 256]; // 16
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -151,20 +157,39 @@ export default class AppAudio extends EventEmitter {
 	}
 
 	updateFrequencyData() {
+		if (!this.player) return;
+
 		this.analyserNode.getByteFrequencyData(this.freqByteData);
 
-		// normalize
-		for (let i = 0; i < this.levelsCount; i++) {
-			let sum = 0;
-			for (let j = 0; j < this.binsPerLevel; j++) {
-				sum += this.freqByteData[(i * this.binsPerLevel) + j];
-			}
+		// levels
+		if (this.levelsType == this.TYPE_LINEAR) {
+			for (let i = 0; i < this.levelsCount; i++) {
+				let sum = 0;
+				for (let j = 0; j < this.binsPerLevel; j++) {
+					sum += this.freqByteData[(i * this.binsPerLevel) + j];
+				}
 
-			// freqByteData values go from 0 to 256
-			this.levelsData[i] = sum / this.binsPerLevel / 256;
+				// normalize
+				// freqByteData values go from 0 to 256
+				this.levelsData[i] = sum / this.binsPerLevel / 256;
+			}
+		} else {
+			let totalBands = 0;
+			for (let i = 0; i < this.levelsCount; i++) {
+				const bands = this.sampleBands[i];
+
+				let sum = 0;
+				for (let j = 0; j < bands; j++) {
+					sum += this.freqByteData[j + totalBands];
+				}
+
+				this.levelsData[i] = sum / bands / 256;
+
+				totalBands += bands;
+			}
 		}
 
-		// average level
+		// average
 		let sum = 0;
 		for(let i = 0; i < this.levelsCount; i++) {
 			sum += this.levelsData[i];

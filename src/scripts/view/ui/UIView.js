@@ -13,6 +13,7 @@ export default class UIView {
 		this.audioPeakCutOff = this.audio.peakCutOff;
 		this.audioPeakDetectIndex = this.audio.peakDetectIndex;
 		this.audioDebugVisible = true;
+		this.audioType = ['linear', 'exponential'];
 		
 		this.range = [0, 1];
 		this.rangeDecay = [0.9, 1.0];
@@ -60,6 +61,7 @@ export default class UIView {
 		.addSlider(this, 'audioPeakInterval', 'rangeInterval', { label: 'peak interval', onChange: () => { that.onAudioChange(); } })
 		.addSlider(this, 'audioPeakCutOff', 'range', { label: 'peak cutoff', onChange: () => { that.onAudioChange(); } })
 		.addSlider(this, 'audioPeakDetectIndex', 'rangeDetect', { label: 'peak index', step: 1, dp: 0, onChange: () => { that.onAudioChange(); } })
+		.addSelect(this, 'audioType', { label: 'type', onChange: (index) => { that.onAudioTypeChange(index); } })
 		// .addCheckbox(this, 'audioDebugVisible', { label: 'debug' })
 
 		/*
@@ -109,7 +111,7 @@ export default class UIView {
 	// EVENT HANDLERS
 	// ---------------------------------------------------------------------------------------------
 
-	onAudioChange(index) {
+	onAudioChange() {
 		// console.log('onChange', index, this.view);
 		this.audio.gainNode.gain.value = this.volume;
 		this.audio.analyserNode.smoothingTimeConstant = this.audioSmoothing;
@@ -117,6 +119,10 @@ export default class UIView {
 		this.audio.peakCutOff = this.audioPeakCutOff;
 		this.audio.peakInterval = this.audioPeakInterval;
 		this.audio.peakDetectIndex = floor(this.audioPeakDetectIndex);
+	}
+	
+	onAudioTypeChange(index) {
+		this.audio.levelsType = index || 0;
 	}
 
 	onTwoChange() {

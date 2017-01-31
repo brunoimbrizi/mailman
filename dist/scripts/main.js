@@ -66398,6 +66398,16 @@ var AppAudio = function (_EventEmitter) {
 		get: function get() {
 			return 1024;
 		}
+	}, {
+		key: 'TYPE_LINEAR',
+		get: function get() {
+			return 0;
+		}
+	}, {
+		key: 'TYPE_EXPONENTIAL',
+		get: function get() {
+			return 1;
+		}
 	}], [{
 		key: 'AUDIO_LOAD',
 		get: function get() {
@@ -66487,7 +66497,13 @@ var AppAudio = function (_EventEmitter) {
 			this.analyserNode.smoothingTimeConstant = 0.85;
 			this.analyserNode.connect(this.gainNode);
 
-			this.levelsCount = 32;
+			// attach visualizer node to our existing dynamicsCompressorNode, which was connected to context.destination
+			var dynamicsNode = createjs.Sound.activePlugin.dynamicsCompressorNode;
+			dynamicsNode.disconnect(); // disconnect from destination
+			dynamicsNode.connect(this.analyserNode);
+
+			this.levelsType = this.TYPE_LINEAR;
+			this.levelsCount = 16;
 			this.levelsData = [];
 
 			this.binCount = this.analyserNode.frequencyBinCount; // FFT_SIZE / 2
@@ -66495,17 +66511,15 @@ var AppAudio = function (_EventEmitter) {
 
 			this.freqByteData = new Uint8Array(this.binCount);
 
-			this.peakCutOff = 0.35;
+			this.peakCutOff = 0.25;
 			this.peakLast = 0;
 			this.peakDecay = 0.99;
 			this.peakInterval = 30; // frames
 			this.peakElapsed = 0;
-			this.peakDetectIndex = 10; // average = -1
+			this.peakDetectIndex = -1; // average = -1
 
-			// attach visualizer node to our existing dynamicsCompressorNode, which was connected to context.destination
-			var dynamicsNode = createjs.Sound.activePlugin.dynamicsCompressorNode;
-			dynamicsNode.disconnect(); // disconnect from destination
-			dynamicsNode.connect(this.analyserNode);
+			// this.sampleBands = [2, 4, 8, 16, 32, 64, 128, 256]; // 8
+			this.sampleBands = [1, 1, 2, 2, 2, 4, 4, 8, 8, 16, 16, 32, 32, 64, 64, 128, 256]; // 16
 		}
 
 		// ---------------------------------------------------------------------------------------------
@@ -66582,23 +66596,42 @@ var AppAudio = function (_EventEmitter) {
 	}, {
 		key: 'updateFrequencyData',
 		value: function updateFrequencyData() {
+			if (!this.player) return;
+
 			this.analyserNode.getByteFrequencyData(this.freqByteData);
 
-			// normalize
-			for (var i = 0; i < this.levelsCount; i++) {
-				var _sum = 0;
-				for (var j = 0; j < this.binsPerLevel; j++) {
-					_sum += this.freqByteData[i * this.binsPerLevel + j];
-				}
+			// levels
+			if (this.levelsType == this.TYPE_LINEAR) {
+				for (var i = 0; i < this.levelsCount; i++) {
+					var _sum = 0;
+					for (var j = 0; j < this.binsPerLevel; j++) {
+						_sum += this.freqByteData[i * this.binsPerLevel + j];
+					}
 
-				// freqByteData values go from 0 to 256
-				this.levelsData[i] = _sum / this.binsPerLevel / 256;
+					// normalize
+					// freqByteData values go from 0 to 256
+					this.levelsData[i] = _sum / this.binsPerLevel / 256;
+				}
+			} else {
+				var totalBands = 0;
+				for (var _i = 0; _i < this.levelsCount; _i++) {
+					var bands = this.sampleBands[_i];
+
+					var _sum2 = 0;
+					for (var _j = 0; _j < bands; _j++) {
+						_sum2 += this.freqByteData[_j + totalBands];
+					}
+
+					this.levelsData[_i] = _sum2 / bands / 256;
+
+					totalBands += bands;
+				}
 			}
 
-			// average level
+			// average
 			var sum = 0;
-			for (var _i = 0; _i < this.levelsCount; _i++) {
-				sum += this.levelsData[_i];
+			for (var _i2 = 0; _i2 < this.levelsCount; _i2++) {
+				sum += this.levelsData[_i2];
 			}
 
 			this.avgLevel = sum / this.levelsCount;
@@ -67235,6 +67268,7 @@ var UIView = function () {
 		this.audioPeakCutOff = this.audio.peakCutOff;
 		this.audioPeakDetectIndex = this.audio.peakDetectIndex;
 		this.audioDebugVisible = true;
+		this.audioType = ['linear', 'exponential'];
 
 		this.range = [0, 1];
 		this.rangeDecay = [0.9, 1.0];
@@ -67287,6 +67321,8 @@ var UIView = function () {
 					that.onAudioChange();
 				} }).addSlider(this, 'audioPeakDetectIndex', 'rangeDetect', { label: 'peak index', step: 1, dp: 0, onChange: function onChange() {
 					that.onAudioChange();
+				} }).addSelect(this, 'audioType', { label: 'type', onChange: function onChange(index) {
+					that.onAudioTypeChange(index);
 				} });
 			// .addCheckbox(this, 'audioDebugVisible', { label: 'debug' })
 
@@ -67340,7 +67376,7 @@ var UIView = function () {
 
 	}, {
 		key: 'onAudioChange',
-		value: function onAudioChange(index) {
+		value: function onAudioChange() {
 			// console.log('onChange', index, this.view);
 			this.audio.gainNode.gain.value = this.volume;
 			this.audio.analyserNode.smoothingTimeConstant = this.audioSmoothing;
@@ -67348,6 +67384,11 @@ var UIView = function () {
 			this.audio.peakCutOff = this.audioPeakCutOff;
 			this.audio.peakInterval = this.audioPeakInterval;
 			this.audio.peakDetectIndex = floor(this.audioPeakDetectIndex);
+		}
+	}, {
+		key: 'onAudioTypeChange',
+		value: function onAudioTypeChange(index) {
+			this.audio.levelsType = index || 0;
 		}
 	}, {
 		key: 'onTwoChange',
@@ -67633,7 +67674,8 @@ var WebGLView = function () {
 			// this.object.rotation.y *= 0.98;
 			// this.object.rotation.z *= 0.98;
 
-			this.pointLight.intensity *= 0.9;
+			this.pointLight.intensity = this.audio.levelsData[10] * 2;
+			// this.pointLight.intensity *= 0.96;
 		}
 	}, {
 		key: 'draw',

@@ -102,7 +102,8 @@ export default class WebGLView {
 		// this.object.rotation.y *= 0.98;
 		// this.object.rotation.z *= 0.98;
 
-		this.pointLight.intensity *= 0.9;
+		this.pointLight.intensity = this.audio.levelsData[10] * 2;
+		// this.pointLight.intensity *= 0.96;
 	}
 
 	draw() {
